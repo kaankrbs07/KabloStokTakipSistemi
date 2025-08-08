@@ -1,0 +1,70 @@
+using KabloStokTakipSistemi.Middlewares;
+using KabloStokTakipSistemi.Data;
+using KabloStokTakipSistemi.Services; // Servis sınıflarını tanımak için
+using Microsoft.EntityFrameworkCore;
+using NLog.Web;
+using AutoMapper;
+using KabloStokTakipSistemi.Services.Implementations;
+
+var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+
+    // NLog
+    builder.Logging.ClearProviders();
+    builder.Host.UseNLog();
+
+    // DbContext
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    // AutoMapper: MappingProfiles klasöründeki tüm profilleri tara
+    builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+    // Swagger & Controller
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    // Servis katmanı (DI) kayıtları
+    builder.Services.AddScoped<UserService>();
+    builder.Services.AddScoped<CableService>();
+    builder.Services.AddScoped<AlertService>();
+    builder.Services.AddScoped<LogService>();
+    builder.Services.AddScoped<ReportService>();
+    builder.Services.AddScoped<EmailService>();
+
+    // Eğer JWT kullanacaksan bu kısıma Authentication/Authorization config eklenir
+
+    var app = builder.Build();
+
+    // 🌐 Swagger
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseHttpsRedirection();
+
+    app.UseAuthentication();  // JWT varsa gerekli
+    app.UseAuthorization();
+
+    // SESSION_CONTEXT middleware
+    app.UseMiddleware<SessionContextMiddleware>();
+
+    app.MapControllers();
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    logger.Error(ex, "Program başlatılırken fatal bir hata oluştu");
+    throw;
+}
+finally
+{
+    NLog.LogManager.Shutdown();
+}

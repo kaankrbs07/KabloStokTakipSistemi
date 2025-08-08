@@ -1,0 +1,9 @@
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.csproj.AssemblyReference.cache
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.AssemblyInfoInputs.cache
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.AssemblyInfo.cs
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.csproj.CoreCompileInputs.cache
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.RazorAssemblyInfo.cache
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.RazorAssemblyInfo.cs
