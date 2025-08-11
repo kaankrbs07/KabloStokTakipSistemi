@@ -12,7 +12,6 @@ public class UserProfile : Profile
         CreateMap<User, GetUserDto>()
             .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.DepartmentName));
         CreateMap<CreateUserDto, User>();
-        CreateMap<UpdateUserDto, User>();
 
         // 🔹 Admin
         CreateMap<Admin, GetAdminDto>()
