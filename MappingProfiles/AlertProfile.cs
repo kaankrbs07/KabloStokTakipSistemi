@@ -1,14 +1,13 @@
 ﻿using AutoMapper;
-using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.DTOs;
+using KabloStokTakipSistemi.Models;
 
-namespace KabloStokTakipSistemi.MappingProfiles;
+namespace KabloStokTakipSistemi.Mappingprofiles;
 
 public class AlertProfile : Profile
 {
     public AlertProfile()
     {
-        // Sadece GetAlertDto var çünkü trigger ile oluşuyor
         CreateMap<Alert, GetAlertDto>();
     }
 }
