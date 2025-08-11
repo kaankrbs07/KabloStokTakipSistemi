@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KabloStokTakipSistemi.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
 public class UserController : ControllerBase
 {
