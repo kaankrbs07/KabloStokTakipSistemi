@@ -1,20 +1,23 @@
-﻿namespace KabloStokTakipSistemi.DTOs;
+﻿
+namespace KabloStokTakipSistemi.DTOs;
 
-public record CreateDepartmentDto(
-    string? DepartmentName,
-    long AdminID
-);
+public record CreateDepartmentDto
+{
+    public string DepartmentName { get; init; } = null!;
+    public int AdminID { get; init; }               // DB: numeric(5,0) -> int uyumlu
+}
 
-public record GetDepartmentDto(
-    int DepartmentID,
-    string? DepartmentName,
-    DateTime CreatedAt,
-    string AdminUsername
-);
+public record UpdateDepartmentDto
+{
+    public string DepartmentName { get; init; } = null!;
+    public int AdminID { get; init; }
+}
 
+public record GetDepartmentDto
+{
+    public int DepartmentID { get; init; }
+    public string? DepartmentName { get; init; }
+    public int AdminID { get; init; }
+    public DateTime CreatedAt { get; init; }
+}
 
-public record UpdateDepartmentDto(
-    int DepartmentID,
-    string? DepartmentName,
-    long? AdminID
-);
