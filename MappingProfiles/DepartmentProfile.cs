@@ -1,4 +1,4 @@
-﻿// MappingProfiles/DepartmentProfile.cs
+﻿
 using AutoMapper;
 using KabloStokTakipSistemi.DTOs;      // GetDepartmentDto, CreateDepartmentDto, UpdateDepartmentDto
 using KabloStokTakipSistemi.Models;   // Department, Admin
