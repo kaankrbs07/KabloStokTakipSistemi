@@ -7,8 +7,11 @@ public class ReportProfile : Profile
 {
     public ReportProfile()
     {
-        // SP direkt DTO'ya döneceği için genelde mapper gerekmez ama AutoMapper kullanılıyorsa:
-        CreateMap<CableReportDto, CableReportDto>();
-        CreateMap<MultiCableReportDto, MultiCableReportDto>();
+        // --- Aylık rapor SP DTO’ları (passthrough) ---
+        CreateMap<MonthlyMultiCableReportDto, MonthlyMultiCableReportDto>();
+        CreateMap<MonthlySingleCableReportDto, MonthlySingleCableReportDto>();
+
+        // --- Kullanıcı aktivite özeti SP DTO’su (passthrough) ---
+        CreateMap<UserActivitySummaryDto, UserActivitySummaryDto>();
     }
 }
