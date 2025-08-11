@@ -10,5 +10,5 @@ public class CableThreshold
     [Required]
     public int MinQuantity { get; set; }
 
-    public MultipleCable? MultiCable { get; set; }
+    public MultiCable? MultiCable { get; set; }
 }

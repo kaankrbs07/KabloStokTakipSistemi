@@ -1,93 +1,99 @@
-﻿using KabloStokTakipSistemi.Data;
+﻿// Services/AdminService.cs
+using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace KabloStokTakipSistemi.Services;
+namespace KabloStokTakipSistemi.Services.Implementations;
 
 public class AdminService : IAdminService
 {
     private readonly AppDbContext _context;
-
-    public AdminService(AppDbContext context)
-    {
-        _context = context;
-    }
+    public AdminService(AppDbContext context) => _context = context;
 
     public async Task<IEnumerable<GetAdminDto>> GetAllAdminsAsync()
     {
         var admins = await _context.Admins
             .Include(a => a.User)
-            .ThenInclude(u => u.Department)
+            .AsNoTracking()
             .ToListAsync();
 
         return admins.Select(a => new GetAdminDto(
             a.AdminID,
             a.Username,
-            a.User?.FirstName,
-            a.User?.LastName,
-            a.User?.Department?.DepartmentName
+            a.DepartmentName,           // Admins tablosu
+            a.User?.FirstName,          // Users tablosu
+            a.User?.LastName            // Users tablosu
         ));
     }
 
     public async Task<GetAdminDto?> GetAdminByIdAsync(long adminId)
     {
-        var admin = await _context.Admins
-            .Include(a => a.User)
-            .ThenInclude(u => u.Department)
-            .FirstOrDefaultAsync(a => a.AdminID == adminId);
+        var a = await _context.Admins
+            .Include(x => x.User)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.AdminID == adminId);
 
-        if (admin == null) return null;
-
-        return new GetAdminDto(
-            admin.AdminID,
-            admin.Username,
-            admin.User?.FirstName,
-            admin.User?.LastName,
-            admin.User?.Department?.DepartmentName
-        );
+        return a is null
+            ? null
+            : new GetAdminDto(
+                a.AdminID,
+                a.Username,
+                a.DepartmentName,
+                a.User?.FirstName,
+                a.User?.LastName
+            );
     }
 
-    public async Task<bool> CreateAdminAsync(CreateUserDto dto,CreateAdminDto adminDto)
+    public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
     {
-        // 1. Kullanıcıyı oluştur (Users + Admins)
-        var result = await _context.Database.ExecuteSqlRawAsync(
-            "EXEC sp_CreateUser @UserID = {0}, @Password = {1}, @Role = {2}, @DepartmentID = {3}",
-            dto.UserID,
-            dto.Password,
-            "Admin",
-            dto.DepartmentID ?? (object)DBNull.Value
-        );
-
-        if (result <= 0)
-            return false;
-
-        // 2. Admin tablosuna kayıt
-        var admin = new Admin
+        try
         {
-            AdminID = adminDto.AdminID,
-            Username =adminDto.Username,
-            UserID = dto.UserID
-        };
+            var parameters = new[]
+            {
+                new SqlParameter("@UserID", userDto.UserID),
+                new SqlParameter("@FirstName", (object?)userDto.FirstName ?? DBNull.Value),
+                new SqlParameter("@LastName", (object?)userDto.LastName ?? DBNull.Value),
+                new SqlParameter("@Email", (object?)userDto.Email ?? DBNull.Value),
+                new SqlParameter("@PhoneNumber", (object?)userDto.PhoneNumber ?? DBNull.Value),
+                new SqlParameter("@DepartmentID", (object?)userDto.DepartmentID ?? DBNull.Value),
+                new SqlParameter("@Role", "Admin"), // zorunlu admin rolü
+                new SqlParameter("@IsActive", userDto.IsActive),
+                new SqlParameter("@Password", userDto.Password),
 
-        _context.Admins.Add(admin);
-        return await _context.SaveChangesAsync() > 0;
+                // Admin tablosuna özel alanlar
+                new SqlParameter("@AdminUsername", adminDto.Username),
+                new SqlParameter("@AdminDepartmentName", adminDto.DepartmentName)
+            };
+
+            // Yeni SP: hem Users'a hem Admins'e ekleme yapar
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC sp_CreateUser @UserID, @FirstName, @LastName, @Email, @PhoneNumber, " +
+                "@DepartmentID, @Role, @IsActive, @Password, @AdminUsername, @AdminDepartmentName",
+                parameters
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Hata loglama eklenebilir
+            return false;
+        }
     }
 
 
-    public async Task<bool> UpdateAdminDepartmentAsync(long adminId, int newDepartmentId)
+    public async Task<bool> UpdateAdminDepartmentAsync(long adminId, string newDepartmentName)
     {
-        var admin = await _context.Admins
-            .Include(a => a.User)
-            .FirstOrDefaultAsync(a => a.AdminID == adminId);
+        var admin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == adminId);
+        if (admin is null) return false;
 
-        if (admin == null || admin.User == null)
-            return false;
-
-        admin.User.DepartmentID = newDepartmentId;
-        _context.Users.Update(admin.User);
+        admin.DepartmentName = newDepartmentName;
+        _context.Admins.Update(admin);
 
         return await _context.SaveChangesAsync() > 0;
     }
 }
+

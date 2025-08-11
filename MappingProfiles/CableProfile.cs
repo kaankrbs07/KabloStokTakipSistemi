@@ -8,31 +8,58 @@ public class CableProfile : Profile
 {
     public CableProfile()
     {
-        // SingleCable
+        // ----------------------
+        // SingleCable <-> DTOs
+        // ----------------------
         CreateMap<SingleCable, GetSingleCableDto>();
+
         CreateMap<CreateSingleCableDto, SingleCable>();
-        CreateMap<UpdateSingleCableDto, SingleCable>();
 
-        // MultipleCable
-        CreateMap<MultipleCable, GetMultipleCableDto>();
-        CreateMap<CreateMultipleCableDto, MultipleCable>();
-        CreateMap<UpdateMultipleCableDto, MultipleCable>();
+        // Update: null alanlar mevcut entity değerini EZMESİN
+        CreateMap<UpdateSingleCableDto, SingleCable>()
+            .ForAllMembers(opt =>
+                opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        //  MultiCableContent
+        // ----------------------
+        // MultipleCable <-> DTOs
+        // ----------------------
+        CreateMap<MultiCable, GetMultiCableDto>(); // isim düzeltildi
+
+        CreateMap<CreateMultiCableDto, MultiCable>();
+
+        // Update: null-ignore
+        CreateMap<UpdateMultiCableDto, MultiCable>()
+            .ForAllMembers(opt =>
+                opt.Condition((src, dest, srcMember) => srcMember is not null));
+
+        // ----------------------
+        // MultiCableContent <-> DTOs
+        // ----------------------
         CreateMap<MultiCableContent, GetMultiCableContentDto>()
-            .ForMember(dest => dest.SingleCableColor, opt => opt.MapFrom(src => src.SingleCable.Color));
+            .ForMember(d => d.SingleCableColor,
+                m => m.MapFrom(s => s.SingleCable.Color));
+
         CreateMap<CreateMultiCableContentDto, MultiCableContent>();
-        CreateMap<UpdateMultiCableContentDto, MultiCableContent>();
+        // Not: UpdateMultiCableContentDto tanımlı olmadığı için map kaldırıldı.
 
-        // CableThreshold
+        // ----------------------
+        // CableThreshold <-> DTOs
+        // ----------------------
         CreateMap<CableThreshold, GetCableThresholdDto>()
-            .ForMember(dest => dest.CableName, opt => opt.MapFrom(src => src.MultiCable.CableName));
+            .ForMember(d => d.CableName,
+                m => m.MapFrom(s => s.MultiCable.CableName));
         CreateMap<CreateCableThresholdDto, CableThreshold>();
-        CreateMap<UpdateCableThresholdDto, CableThreshold>();
+        CreateMap<UpdateCableThresholdDto, CableThreshold>()
+            .ForAllMembers(opt =>
+                opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        // ColorThreshold
+        // ----------------------
+        // ColorThreshold <-> DTOs
+        // ----------------------
         CreateMap<ColorThreshold, GetColorThresholdDto>();
         CreateMap<CreateColorThresholdDto, ColorThreshold>();
-        CreateMap<UpdateColorThresholdDto, ColorThreshold>();
+        CreateMap<UpdateColorThresholdDto, ColorThreshold>()
+            .ForAllMembers(opt =>
+                opt.Condition((src, dest, srcMember) => srcMember is not null));
     }
 }

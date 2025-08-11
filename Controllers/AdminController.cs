@@ -15,9 +15,7 @@ public class AdminController : ControllerBase
         _adminService = adminService;
     }
 
-    /// <summary>
-    /// Tüm adminleri listeler
-    /// </summary>
+    /// <summary>Tüm adminleri listeler</summary>
     [HttpGet]
     public async Task<IActionResult> GetAllAdmins()
     {
@@ -25,42 +23,30 @@ public class AdminController : ControllerBase
         return Ok(admins);
     }
 
-    /// <summary>
-    /// Belirli bir admini getirir
-    /// </summary>
+    /// <summary>Belirli bir admini getirir</summary>
     [HttpGet("{adminId:long}")]
     public async Task<IActionResult> GetAdminById(long adminId)
     {
         var admin = await _adminService.GetAdminByIdAsync(adminId);
-        if (admin == null)
-            return NotFound();
-
-        return Ok(admin);
+        return admin is null ? NotFound() : Ok(admin);
     }
 
-    /// <summary>
-    /// Yeni admin oluşturur (User + Admin)
-    /// </summary>
+    /// <summary>Yeni admin oluşturur (Users + Admins)</summary>
     [HttpPost]
     public async Task<IActionResult> CreateAdmin([FromBody] (CreateUserDto user, CreateAdminDto admin) dto)
     {
-        var success = await _adminService.CreateAdminAsync(dto.user, dto.admin);
-        if (!success)
-            return BadRequest("Admin oluşturulamadı.");
-
-        return Ok("Admin başarıyla oluşturuldu.");
+        var ok = await _adminService.CreateAdminAsync(dto.user, dto.admin);
+        return ok ? Ok("Admin başarıyla oluşturuldu.") : BadRequest("Admin oluşturulamadı.");
     }
 
-    /// <summary>
-    /// Adminin bağlı olduğu birimi günceller
-    /// </summary>
+    /// <summary>Admin’in DepartmentName alanını günceller</summary>
     [HttpPut("{adminId:long}/department")]
-    public async Task<IActionResult> UpdateDepartment(long adminId, [FromQuery] int newDepartmentId)
+    public async Task<IActionResult> UpdateDepartment(long adminId, [FromQuery] string newDepartmentName)
     {
-        var success = await _adminService.UpdateAdminDepartmentAsync(adminId, newDepartmentId);
-        if (!success)
-            return NotFound("Admin bulunamadı veya güncellenemedi.");
+        if (string.IsNullOrWhiteSpace(newDepartmentName))
+            return BadRequest("DepartmentName boş olamaz.");
 
-        return Ok("Admin birimi güncellendi.");
+        var ok = await _adminService.UpdateAdminDepartmentAsync(adminId, newDepartmentName);
+        return ok ? Ok("Admin birimi güncellendi.") : NotFound("Admin bulunamadı veya güncellenemedi.");
     }
 }

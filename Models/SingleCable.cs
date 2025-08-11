@@ -1,19 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Models/SingleCable.cs
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KabloStokTakipSistemi.Models;
 
 public class SingleCable
 {
     [Key]
-    public int CableID { get; set; }
+    public int CableID { get; set; }                      // PK
 
-    [Required, MaxLength(50)]
-    public string Color { get; set; }
+    [MaxLength(50)]
+    public string Color { get; set; } = default!;         // nvarchar(50) not null
 
-    [Required]
-    public bool IsActive { get; set; }
+    public bool IsActive { get; set; } = true;            // bit not null
 
-    // Nullable Foreign Key → Çoklu kabloya bağlıysa FK olacak
-    public int? MultiCableID { get; set; }
-    public MultipleCable? MultiCable { get; set; }
+    public int? MultiCableID { get; set; }                // FK, nullable
+    public MultiCable? MultipleCable { get; set; }     // nav (opsiyonel)
+
+    // Many-to-many (içerik tablosu) tarafı
+    public ICollection<MultiCableContent> MultiCableContents { get; set; } = new List<MultiCableContent>();
 }

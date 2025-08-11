@@ -1,18 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Models/MultiCableContent.cs
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KabloStokTakipSistemi.Models;
 
 public class MultiCableContent
 {
-    [Key, Column(Order = 0)]
-    public int MultiCableID { get; set; }
+    // Composite Key: MultiCableID + SingleCableID (DbContext'te tanımlanacak)
+    public int MultiCableID { get; set; }                 // FK -> MultipleCables
+    public int SingleCableID { get; set; }                // FK -> SingleCables
 
-    [Key, Column(Order = 1)]
-    public int SingleCableID { get; set; }
+    public int Quantity { get; set; }                     // not null
 
-    public int Quantity { get; set; }
-
-    public MultipleCable MultiCable { get; set; }
-    public SingleCable SingleCable { get; set; }
+    public MultiCable MultiCable { get; set; } = default!;
+    public SingleCable SingleCable { get; set; } = default!;
 }
+

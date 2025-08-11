@@ -21,6 +21,7 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<GetUserDto>> GetAllUsersAsync()
     {
+        // sp_GetAllUsers: Users + Department join dönüyorsa harika; yoksa Include ile de olur.
         var result = await _context.Users
             .FromSqlRaw("EXEC sp_GetAllUsers")
             .Include(u => u.Department)
@@ -42,7 +43,7 @@ public class UserService : IUserService
     {
         try
         {
-            var parameters = new[]
+            var p = new[]
             {
                 new SqlParameter("@UserID", dto.UserID),
                 new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
@@ -52,40 +53,76 @@ public class UserService : IUserService
                 new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
                 new SqlParameter("@Role", dto.Role),
                 new SqlParameter("@IsActive", dto.IsActive),
-                new SqlParameter("@Password", dto.Password)
+                new SqlParameter("@Password", dto.Password),
+
+                // Admin ise değer, değilse NULL gönder
+                new SqlParameter("@AdminUsername", (object?)(
+                    string.Equals(dto.Role, "Admin", StringComparison.OrdinalIgnoreCase)
+                        ? dto.AdminUsername
+                        : null) ?? DBNull.Value),
+
+                new SqlParameter("@AdminDepartmentName", (object?)(
+                    string.Equals(dto.Role, "Admin", StringComparison.OrdinalIgnoreCase)
+                        ? dto.AdminDepartmentName
+                        : null) ?? DBNull.Value)
             };
 
             await _context.Database.ExecuteSqlRawAsync(
-                "EXEC sp_CreateUser @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @Role, @IsActive, @Password",
-                parameters);
+                "EXEC dbo.sp_CreateUser @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @Role, @IsActive, @Password, @AdminUsername, @AdminDepartmentName",
+                p);
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // loglama yapılabilir
             return false;
         }
     }
+
 
     public async Task<bool> UpdateUserAsync(UpdateUserDto dto)
     {
         try
         {
-            var parameters = new[]
+            // Role veya Password geldiyse güvenlik alanlarını da güncelleyen SP’yi çalıştır.
+            if (!string.IsNullOrWhiteSpace(dto.Role) || !string.IsNullOrWhiteSpace(dto.Password))
             {
-                new SqlParameter("@UserID", dto.UserID),
-                new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
-                new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
-                new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
-                new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
-                new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
-                new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value)
-            };
+                var p = new[]
+                {
+                    new SqlParameter("@UserID", dto.UserID),
+                    new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
+                    new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
+                    new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
+                    new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
+                    new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
+                    new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value),
+                    new SqlParameter("@Role", (object?)dto.Role ?? DBNull.Value),
+                    new SqlParameter("@Password", (object?)dto.Password ?? DBNull.Value)
+                };
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive",
-                parameters);
+                // Bu SP’yi senin tarafta oluştur: Role/Password null ise dokunmasın.
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
+                    p);
+            }
+            else
+            {
+                var p = new[]
+                {
+                    new SqlParameter("@UserID", dto.UserID),
+                    new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
+                    new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
+                    new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
+                    new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
+                    new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
+                    new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value)
+                };
+
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @Role, @IsActive, @Password",
+                    p);
+
+            }
 
             return true;
         }
@@ -99,8 +136,9 @@ public class UserService : IUserService
     {
         try
         {
-            var param = new SqlParameter("@UserID", userId);
-            await _context.Database.ExecuteSqlRawAsync("EXEC sp_DeactivateUser @UserID", param);
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC sp_DeactivateUser @UserID",
+                new SqlParameter("@UserID", userId));
             return true;
         }
         catch
@@ -117,4 +155,5 @@ public class UserService : IUserService
             .FirstOrDefaultAsync();
     }
 }
+
 

@@ -1,24 +1,39 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KabloStokTakipSistemi.Models;
 
 public class StockMovement
 {
     [Key]
-    public int MovementID { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int MovementID { get; set; }                  // PK (int, identity)
 
-    public int CableID { get; set; }
+    [Required]
+    public int CableID { get; set; }                     // int, not null
 
-    [MaxLength(10)]
-    public string TableName { get; set; } // "Single" veya "Multi"
+    [Required, MaxLength(10)]
+    [Column(TypeName = "nvarchar(10)")]
+    public string TableName { get; set; } = null!;       // "Single" | "Multi"
 
-    public int Quantity { get; set; }
+    [Required]
+    public int Quantity { get; set; }                    // int, not null
 
-    [MaxLength(10)]
-    public string MovementType { get; set; } // "Giriş" / "Çıkış"
+    [Required, MaxLength(10)]
+    [Column(TypeName = "nvarchar(10)")]
+    public string MovementType { get; set; } = null!;    // "Giriş" | "Çıkış"
 
-    public DateTime MovementDate { get; set; } = DateTime.Now;
+    // DB tarafında DEFAULT (GETDATE()) olduğunu varsayıyoruz
+    [Required]
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+    public DateTime MovementDate { get; set; }           // datetime, not null
 
-    public long UserID { get; set; }
-    public User User { get; set; }
+    [Required]
+    [Column(TypeName = "numeric(10,0)")]
+    public long UserID { get; set; }                     // FK -> Users(UserID)
+
+    [ForeignKey(nameof(UserID))]
+    public User? User { get; set; }                      // navigation (nullable)
 }
+
+

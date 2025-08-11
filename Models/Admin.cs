@@ -1,18 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Models/Admin.cs
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace KabloStokTakipSistemi.Models;
 
+[Index(nameof(UserID), IsUnique = true)]
 public class Admin
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public long AdminID { get; set; }
+    [Column(TypeName = "numeric(5,0)")]
+    public long AdminID { get; set; }                 // PK numeric(5,0)
 
     [Required, MaxLength(50)]
-    public string Username { get; set; }
+    public string DepartmentName { get; set; } = null!; // yeni sütun
+
+    [Required, MaxLength(50)]
+    public string Username { get; set; } = null!;
 
     [Required]
-    public long UserID { get; set; }
+    [Column(TypeName = "numeric(10,0)")]
+    public long UserID { get; set; }                  // FK Users(UserID)
+
+    [ForeignKey(nameof(UserID))]
     public User? User { get; set; }
 }

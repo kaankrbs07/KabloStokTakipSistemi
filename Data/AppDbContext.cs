@@ -17,7 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<Department> Departments => Set<Department>();
 
     public DbSet<SingleCable> SingleCables => Set<SingleCable>();
-    public DbSet<MultipleCable> MultipleCables => Set<MultipleCable>();
+    public DbSet<MultiCable> MultipleCables => Set<MultiCable>();
     public DbSet<MultiCableContent> MultiCableContents => Set<MultiCableContent>();
 
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();

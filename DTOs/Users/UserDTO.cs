@@ -1,15 +1,18 @@
-﻿namespace KabloStokTakipSistemi.DTOs.Users;
+﻿
+namespace KabloStokTakipSistemi.DTOs.Users;
 
-public record CreateUserDto(
+public sealed record CreateUserDto(
     long UserID,
     string? FirstName,
     string? LastName,
     string? Email,
     string? PhoneNumber,
-    string Password,
-    string Role,
+    int? DepartmentID,
+    string Role,           // "Admin" | "Employee"
     bool IsActive,
-    int? DepartmentID
+    string Password,       // Users tablosunda
+    string? AdminUsername, // only if Role == "Admin"
+    string? AdminDepartmentName // only if Role == "Admin"
 );
 
 public record GetUserDto(
@@ -20,7 +23,7 @@ public record GetUserDto(
     string? PhoneNumber,
     string Role,
     bool IsActive,
-    string? DepartmentName
+    string? DepartmentName // join ile Departments'tan okunur
 );
 
 public record UpdateUserDto(
@@ -29,8 +32,8 @@ public record UpdateUserDto(
     string? LastName,
     string? Email,
     string? PhoneNumber,
-    string? Password,
+    int? DepartmentID,
     string? Role,
     bool? IsActive,
-    int? DepartmentID
+    string? Password
 );

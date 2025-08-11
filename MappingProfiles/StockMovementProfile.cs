@@ -8,13 +8,14 @@ public class StockMovementProfile : Profile
 {
     public StockMovementProfile()
     {
-        CreateMap<StockMovement, GetStockMovementDto>()
-            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src =>
-                src.User.Role == "Admin"
-                    ? src.User.Admin.Username
-                    : src.User.Employee.EmployeeID.ToString()));
+        // Model <-> Get DTO (bire bir alanlar)
+        CreateMap<StockMovement, GetStockMovementDto>();
 
+        // Create DTO -> Model
         CreateMap<CreateStockMovementDto, StockMovement>();
-        CreateMap<UpdateStockMovementDto, StockMovement>();
+
+        // Update DTO -> Model (null alanlar mevcut değeri ezmesin)
+        CreateMap<UpdateStockMovementDto, StockMovement>()
+            .ForAllMembers(opt => opt.Condition((src, dest, val) => val is not null));
     }
 }

@@ -7,18 +7,15 @@ public interface IUserService
     Task<IEnumerable<GetUserDto>> GetAllUsersAsync();
     Task<GetUserDto?> GetUserByIdAsync(long userId);
 
-
-    /// Yeni kullanıcı oluşturur (sp_CreateUser ile).
+    // Users tablosuna yeni kayıt (tüm kolonlar DTO’da var)
     Task<bool> CreateUserAsync(CreateUserDto dto);
 
-
-    /// Var olan kullanıcıyı günceller (sp_UpdateUsers ile).
+    // Profil alanlarını ve opsiyonel olarak Role/Password’ü günceller
     Task<bool> UpdateUserAsync(UpdateUserDto dto);
 
-    /// Kullanıcıyı pasifleştirir (sp_DeactivateUser ile).
+    // IsActive=false yapar
     Task<bool> DeactivateUserAsync(long userId);
 
-
-    /// Kullanıcının aylık hareket özetini döner (sp_GetUserActivitySummary).
+    // Örnek rapor/özet uç noktası (varsa)
     Task<UserActivitySummaryDto?> GetUserActivitySummaryAsync(long userId);
 }

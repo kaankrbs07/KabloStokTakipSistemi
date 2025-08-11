@@ -1,82 +1,72 @@
-﻿
-using KabloStokTakipSistemi.DTOs.Users;
+﻿using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
-public class UserController : ControllerBase
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    public UsersController(IUserService userService) => _userService = userService;
 
-    public UserController(IUserService userService)
-    {
-        _userService = userService;
-    }
-
+    // GET: api/users
     [HttpGet]
-    public async Task<IActionResult> GetAllUsers()
+    public async Task<ActionResult<IEnumerable<GetUserDto>>> GetAll(CancellationToken ct)
     {
         var users = await _userService.GetAllUsersAsync();
         return Ok(users);
     }
 
-    [HttpGet("{id:long}")]
-    public async Task<IActionResult> GetUserById(long id)
+    // GET: api/users/id
+    [HttpGet("{id:long}", Name = "GetUserById")]
+    public async Task<ActionResult<GetUserDto>> GetById(long id, CancellationToken ct)
     {
         var user = await _userService.GetUserByIdAsync(id);
-        if (user == null)
-            return NotFound(new { message = "Kullanıcı bulunamadı." });
-
-        return Ok(user);
+        return user is null ? NotFound(new { message = "Kullanıcı bulunamadı." }) : Ok(user);
     }
 
+    // POST: api/users
     [HttpPost]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateUserDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var ok = await _userService.CreateUserAsync(dto);
+        if (!ok) return BadRequest(new { message = "Kullanıcı oluşturulamadı." });
 
-        var result = await _userService.CreateUserAsync(dto);
-        if (!result)
-            return BadRequest(new { message = "Kullanıcı oluşturulamadı." });
-
-        return Ok(new { message = "Kullanıcı başarıyla oluşturuldu." });
+        // dto.UserID sizde dışarıdan geliyor (numeric(10,0)); CreatedAtAction ile Location header verelim
+        return CreatedAtRoute("GetUserById", new { id = dto.UserID }, new { message = "Kullanıcı oluşturuldu.", id = dto.UserID });
     }
 
+    // PUT: api/users/id
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> UpdateUser(long id, [FromBody] UpdateUserDto dto)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        // route -> dto eşlemesi
+        dto = dto with { UserID = id };
 
-        dto = dto with { UserID = id }; // DTO içindeki UserID'yi route parametresi ile eşleştir
+        var ok = await _userService.UpdateUserAsync(dto);
+        if (!ok) return NotFound(new { message = "Güncelleme başarısız. Kullanıcı bulunamadı." });
 
-        var result = await _userService.UpdateUserAsync(dto);
-        if (!result)
-            return NotFound(new { message = "Güncelleme başarısız. Kullanıcı bulunamadı." });
-
-        return Ok(new { message = "Kullanıcı güncellendi." });
+        return NoContent();
     }
 
+    // DELETE: api/users/id  (soft-delete / pasif etme)
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> DeactivateUser(long id)
+    public async Task<IActionResult> Deactivate(long id, CancellationToken ct)
     {
-        var result = await _userService.DeactivateUserAsync(id);
-        if (!result)
-            return NotFound(new { message = "Kullanıcı pasif hâle getirilemedi. Kullanıcı bulunamadı." });
+        var ok = await _userService.DeactivateUserAsync(id);
+        if (!ok) return NotFound(new { message = "Kullanıcı pasif hâle getirilemedi. Kullanıcı bulunamadı." });
 
-        return Ok(new { message = "Kullanıcı başarıyla pasif hale getirildi." });
+        return Ok(new { message = "Kullanıcı pasif hâle getirildi." });
     }
 
+    // GET: api/users/id/summary
     [HttpGet("{id:long}/summary")]
-    public async Task<IActionResult> GetUserActivitySummary(long id)
+    public async Task<IActionResult> GetActivitySummary(long id, CancellationToken ct)
     {
         var summary = await _userService.GetUserActivitySummaryAsync(id);
-        if (summary == null)
-            return NotFound(new { message = "Kullanıcının etkinlik özeti bulunamadı." });
-
-        return Ok(summary);
+        return summary is null ? NotFound(new { message = "Etkinlik özeti bulunamadı." }) : Ok(summary);
     }
 }
+

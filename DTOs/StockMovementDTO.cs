@@ -1,28 +1,29 @@
 ﻿namespace KabloStokTakipSistemi.DTOs;
 
 public record CreateStockMovementDto(
-    int CableID,
-    string TableName,
-    int Quantity,
-    string MovementType,
-    long UserID
+    int    CableID,
+    string TableName,     // "Single" | "Multi"
+    int    Quantity,
+    string MovementType,  // "Giriş" | "Çıkış"
+    long   UserID         // numeric(10,0)
 );
 
 public record GetStockMovementDto(
-    int MovementID,
-    int CableID,
-    string TableName,
-    int Quantity,
-    string MovementType,
+    int      MovementID,
+    int      CableID,
+    string   TableName,
+    int      Quantity,
+    string   MovementType,
     DateTime MovementDate,
-    string? UserName
+    long     UserID        // tabloya birebir
 );
- 
+
 public record UpdateStockMovementDto(
-    int MovementID,
-    int? CableID,
+    int     MovementID,
+    int?    CableID,
     string? TableName,
-    int? Quantity,
+    int?    Quantity,
     string? MovementType,
-    long? UserID
+    long?   UserID
 );
+

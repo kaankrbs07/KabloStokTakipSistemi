@@ -8,28 +8,48 @@ public class UserProfile : Profile
 {
     public UserProfile()
     {
-        // 🔹 User
+        // User -> GetUserDto
         CreateMap<User, GetUserDto>()
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.DepartmentName));
+            .ForMember(d => d.DepartmentName,
+                opt => opt.MapFrom(s => s.Department != null ? s.Department.DepartmentName : null));
+
+        // CreateUserDto -> User
         CreateMap<CreateUserDto, User>();
 
-        // 🔹 Admin
+        // UpdateUserDto -> User (null alanlar mevcut değeri ezmesin)
+        CreateMap<UpdateUserDto, User>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
+
+        // Admin -> GetAdminDto (User navigasyonu null olabilir; korumalı yazdık)
         CreateMap<Admin, GetAdminDto>()
-            .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
-            .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName))
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.User.Department.DepartmentName));
+            .ForMember(d => d.FirstName,
+                opt => opt.MapFrom(s => s.User != null ? s.User.FirstName : null))
+            .ForMember(d => d.LastName,
+                opt => opt.MapFrom(s => s.User != null ? s.User.LastName : null))
+            .ForMember(d => d.DepartmentName,
+                opt => opt.MapFrom(s => s.User != null && s.User.Department != null
+                    ? s.User.Department.DepartmentName
+                    : null));
         CreateMap<CreateAdminDto, Admin>();
-        CreateMap<UpdateAdminDto, Admin>();
+        CreateMap<UpdateAdminDto, Admin>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        // 🔹 Employee
+        // Employee -> GetEmployeeDto
         CreateMap<Employee, GetEmployeeDto>()
-            .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
-            .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName))
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.User.Department.DepartmentName));
+            .ForMember(d => d.FirstName,
+                opt => opt.MapFrom(s => s.User != null ? s.User.FirstName : null))
+            .ForMember(d => d.LastName,
+                opt => opt.MapFrom(s => s.User != null ? s.User.LastName : null))
+            .ForMember(d => d.DepartmentName,
+                opt => opt.MapFrom(s => s.User != null && s.User.Department != null
+                    ? s.User.Department.DepartmentName
+                    : null));
         CreateMap<CreateEmployeeDto, Employee>();
-        CreateMap<UpdateEmployeeDto, Employee>();
+        CreateMap<UpdateEmployeeDto, Employee>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        // 🔹 User Activity Summary (SP verisi)
-        CreateMap<User, UserActivitySummaryDto>(); // Eğer ihtiyaç olursa kullanılabilir
+        // Not: UserActivitySummaryDto bir SP çıktısı (keyless). Bunu User'dan map'lemek yerine
+        // DbContext'te HasNoKey() ile SP sonucunu doğrudan DTO'ya projekte etmek daha doğru. 
+        // Bu yüzden: CreateMap<User, UserActivitySummaryDto>(); satırını kaldırdım.
     }
 }
