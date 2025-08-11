@@ -39,6 +39,7 @@ public class UserService : IUserService
 
         return user == null ? null : _mapper.Map<GetUserDto>(user);
     }
+
     public async Task<bool> CreateUserAsync(CreateUserDto dto)
     {
         try
@@ -121,7 +122,6 @@ public class UserService : IUserService
                 await _context.Database.ExecuteSqlRawAsync(
                     "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @Role, @IsActive, @Password",
                     p);
-
             }
 
             return true;
@@ -155,5 +155,3 @@ public class UserService : IUserService
             .FirstOrDefaultAsync();
     }
 }
-
-

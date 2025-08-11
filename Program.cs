@@ -14,6 +14,7 @@ try
 
     // NLog
     builder.Logging.ClearProviders();
+    builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
     builder.Host.UseNLog();
 
     // DbContext
@@ -27,6 +28,9 @@ try
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+
+    // HTTP Context (gerekirse NLog MDLC vb. için)
+    builder.Services.AddHttpContextAccessor();
 
     // Servis katmanı (DI) kayıtları
     builder.Services.AddScoped<UserService>();
@@ -47,12 +51,15 @@ try
         app.UseSwaggerUI();
     }
 
+    // Global hataları yakala (Error seviyesinde NLog'a düşer)
+    app.UseMiddleware<GlobalExceptionMiddleware>();
+
     app.UseHttpsRedirection();
 
     app.UseAuthentication();  // JWT varsa gerekli
     app.UseAuthorization();
 
-    // SESSION_CONTEXT middleware
+    // SESSION_CONTEXT middleware (SP/trigger senaryoları için)
     app.UseMiddleware<SessionContextMiddleware>();
 
     app.MapControllers();

@@ -2,20 +2,21 @@
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.DTOs;
 
-namespace KabloStokTakipSistemi.MappingProfiles;
-
-public class LogProfile : Profile
+namespace KabloStokTakipSistemi.MappingProfiles
 {
-    public LogProfile()
+    public class LogProfile : Profile
     {
-        CreateMap<Log, GetLogDto>()
-            .ForMember(dest => dest.Username, opt => opt.MapFrom(src =>
-                src.User.Role == "Admin"
-                    ? src.User.Admin.Username
-                    : src.User.Employee.EmployeeID.ToString()));
+        public LogProfile()
+        {
+            // Log -> LogDto : doğrudan map
+            CreateMap<Log, LogDto>();
 
-        CreateMap<Log, UserLogDto>()
-            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src =>
-                src.User.FirstName + " " + src.User.LastName));
+
+            CreateMap<Log, UserLogDto>()
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src =>
+                    src.User == null
+                        ? string.Empty
+                        : $"{src.User.FirstName ?? string.Empty} {src.User.LastName ?? string.Empty}".Trim()));
+        }
     }
 }

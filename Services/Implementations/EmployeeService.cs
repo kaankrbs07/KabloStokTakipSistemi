@@ -1,5 +1,4 @@
-﻿
-using KabloStokTakipSistemi.Data;
+﻿using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
@@ -118,4 +117,3 @@ public class EmployeeService : IEmployeeService
         return true;
     }
 }
-

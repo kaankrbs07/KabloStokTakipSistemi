@@ -42,18 +42,18 @@ namespace KabloStokTakipSistemi.Services.Implementations
             {
                 new SqlParameter("@TableName", (object?)f.TableName ?? DBNull.Value),
                 new SqlParameter("@CableName", (object?)f.CableName ?? DBNull.Value),
-                new SqlParameter("@Color",     (object?)f.Color     ?? DBNull.Value),
-                new SqlParameter("@UserID",    (object?)f.UserID    ?? DBNull.Value),
-                new SqlParameter("@DateFrom",  (object?)f.DateFrom  ?? DBNull.Value),
-                new SqlParameter("@DateTo",    (object?)f.DateTo    ?? DBNull.Value),
+                new SqlParameter("@Color", (object?)f.Color ?? DBNull.Value),
+                new SqlParameter("@UserID", (object?)f.UserID ?? DBNull.Value),
+                new SqlParameter("@DateFrom", (object?)f.DateFrom ?? DBNull.Value),
+                new SqlParameter("@DateTo", (object?)f.DateTo ?? DBNull.Value),
             };
 
             return await _db.Set<GetStockMovementDto>()
-                .FromSqlRaw("EXEC dbo.sp_GetStockMovementHistoryFiltered @TableName, @CableName, @Color, @UserID, @DateFrom, @DateTo", p)
+                .FromSqlRaw(
+                    "EXEC dbo.sp_GetStockMovementHistoryFiltered @TableName, @CableName, @Color, @UserID, @DateFrom, @DateTo",
+                    p)
                 .AsNoTracking()
                 .ToListAsync();
         }
     }
 }
-
-
