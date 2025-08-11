@@ -4,7 +4,6 @@ namespace KabloStokTakipSistemi.Services.Interfaces;
 
 public interface IUserService
 {
-    /// Tüm kullanıcıları getirir (aktif/pasif fark etmez).
     Task<IEnumerable<GetUserDto>> GetAllUsersAsync();
     Task<GetUserDto?> GetUserByIdAsync(long userId);
 
