@@ -7,7 +7,7 @@ public interface IUserService
     Task<IEnumerable<GetUserDto>> GetAllUsersAsync();
     Task<GetUserDto?> GetUserByIdAsync(long userId);
 
-    // Users tablosuna yeni kayıt (tüm kolonlar DTO’da var)
+    // Users tablosuna yeni kayıt 
     Task<bool> CreateUserAsync(CreateUserDto dto);
 
     // Profil alanlarını ve opsiyonel olarak Role/Password’ü günceller
