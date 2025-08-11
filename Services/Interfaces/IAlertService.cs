@@ -1,4 +1,5 @@
-﻿using KabloStokTakipSistemi.DTOs;
+﻿// Services/Interfaces/IAlertService.cs
+using KabloStokTakipSistemi.DTOs;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;
 
@@ -18,12 +19,14 @@ public interface IAlertService
 
     Task<GetAlertDto?> GetByIdAsync(int alertId, CancellationToken ct = default);
 
-    // Çözülmüş kabul et (IsActive = 0) – açıklamaya not düşer
+    // Durum değişiklikleri
     Task<bool> ResolveAsync(int alertId, string? resolveNote = null, CancellationToken ct = default);
-
-    // Tekrar aktif et
     Task<bool> ReactivateAsync(int alertId, string? reason = null, CancellationToken ct = default);
 
     // DB fonksiyonu: belirli renkte aktif uyarı var mı?
     Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default);
+
+    // --- E-posta bildirimleri (Controller'ın kullandıkları) ---
+    Task<bool> NotifyAdminsForAlertAsync(int alertId, CancellationToken ct = default);
+    Task<bool> NotifyAdminsForLowStockAsync(string color, int qty, CancellationToken ct = default);
 }
