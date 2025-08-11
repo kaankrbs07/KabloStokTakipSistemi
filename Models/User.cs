@@ -31,7 +31,6 @@ public class User
 
     public Admin? Admin { get; set; }
     public Employee? Employee { get; set; }
-
     public ICollection<Log>? Logs { get; set; }
     public ICollection<StockMovement>? StockMovements { get; set; }
 }
