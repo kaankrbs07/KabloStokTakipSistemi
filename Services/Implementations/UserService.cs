@@ -38,7 +38,6 @@ public class UserService : IUserService
 
         return user == null ? null : _mapper.Map<GetUserDto>(user);
     }
-
     public async Task<bool> CreateUserAsync(CreateUserDto dto)
     {
         try
