@@ -1,5 +1,7 @@
-﻿using AutoMapper;
-using KabloStokTakipSistemi.DTOs;
+﻿
+using AutoMapper;
+using KabloStokTakipSistemi.DTOs;             
+using KabloStokTakipSistemi.DTOs.Users; 
 
 namespace KabloStokTakipSistemi.MappingProfiles;
 

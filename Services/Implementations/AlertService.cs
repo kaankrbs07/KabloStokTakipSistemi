@@ -83,7 +83,7 @@ public sealed class AlertService : IAlertService
             alert.Description = target.Length > 255 ? target[..255] : target;
         }
 
-        // Not: Alert güncellemesi için trigger’ların Log’a yazması bekleniyorsa burada UPDATE yeterli
+        // Not: Alert güncellemesi için trigger’ların Log’a yazması beklendiği için burada UPDATE yeterli
         await _db.SaveChangesAsync(ct);
         return true;
     }

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using AutoMapper;
 using KabloStokTakipSistemi.Services.Implementations;
+using KabloStokTakipSistemi.Services.Interfaces;
 
 var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
 
@@ -37,7 +38,7 @@ try
     builder.Services.AddScoped<CableService>();
     builder.Services.AddScoped<AlertService>();
     builder.Services.AddScoped<LogService>();
-    builder.Services.AddScoped<ReportService>();
+    builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<EmailService>();
 
     // Eğer JWT kullanacaksan bu kısıma Authentication/Authorization config eklenir
