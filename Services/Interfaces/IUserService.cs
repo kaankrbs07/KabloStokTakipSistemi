@@ -6,9 +6,6 @@ public interface IUserService
 {
     /// Tüm kullanıcıları getirir (aktif/pasif fark etmez).
     Task<IEnumerable<GetUserDto>> GetAllUsersAsync();
-
-
-    /// Belirli bir kullanıcıyı ID ile getirir.
     Task<GetUserDto?> GetUserByIdAsync(long userId);
 
 
