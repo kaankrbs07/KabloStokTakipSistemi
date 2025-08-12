@@ -40,7 +40,8 @@ public sealed class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "GetUserActivitySummary failed for UserID={UserID}", userId);
-            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
+            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -63,7 +64,8 @@ public sealed class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "GetMonthlyReportForMultiCables failed");
-            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
+            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -87,7 +89,8 @@ public sealed class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "GetMonthlyReportForSingleCables failed");
-            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
+            return Problem(title: "Rapor oluşturulamadı.", detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

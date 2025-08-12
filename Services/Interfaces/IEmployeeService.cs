@@ -1,4 +1,5 @@
 ﻿// IEmployeeService.cs
+
 using KabloStokTakipSistemi.DTOs.Users;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;

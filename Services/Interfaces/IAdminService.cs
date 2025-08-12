@@ -1,5 +1,4 @@
-﻿
-using KabloStokTakipSistemi.DTOs.Users;
+﻿using KabloStokTakipSistemi.DTOs.Users;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;
 

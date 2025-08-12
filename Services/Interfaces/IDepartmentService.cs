@@ -1,11 +1,11 @@
-﻿
-using KabloStokTakipSistemi.DTOs;
+﻿using KabloStokTakipSistemi.DTOs;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;
 
 public interface IDepartmentService
 {
     Task<GetDepartmentDto?> GetByIdAsync(int departmentId, CancellationToken ct = default);
+
     Task<IReadOnlyList<GetDepartmentDto>> GetAsync(
         int? adminId = null,
         string? search = null,

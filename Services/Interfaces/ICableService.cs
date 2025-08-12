@@ -25,7 +25,8 @@ namespace KabloStokTakipSistemi.Services.Interfaces
         Task<IEnumerable<GetMultiCableContentDto>> GetMultiCableContentsAsync(int multiCableId);
 
 // STOCK MOVEMENTS
-        Task<bool> InsertStockMovementAsync(int cableId, string tableName, int quantity, string movementType, long userId);
+        Task<bool> InsertStockMovementAsync(int cableId, string tableName, int quantity, string movementType,
+            long userId);
 
 // COLOR STATUS
         Task<int> GetStockStatusByColorAsync(string color);
@@ -35,6 +36,5 @@ namespace KabloStokTakipSistemi.Services.Interfaces
         Task<bool> SetCableThresholdAsync(CreateCableThresholdDto dto);
         Task<IEnumerable<GetColorThresholdDto>> GetColorThresholdsAsync();
         Task<IEnumerable<GetCableThresholdDto>> GetCableThresholdsAsync();
-
     }
 }

@@ -63,7 +63,8 @@ public class LogsController : ControllerBase
     /// Operasyon türüne göre log sayıları.
     /// </summary>
     [HttpGet("stats/operations")]
-    public async Task<IActionResult> GetCountByOperation([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
+    public async Task<IActionResult> GetCountByOperation([FromQuery] DateTime? from, [FromQuery] DateTime? to,
+        CancellationToken ct = default)
     {
         try
         {
@@ -82,7 +83,8 @@ public class LogsController : ControllerBase
     /// Tablo adına göre log sayıları.
     /// </summary>
     [HttpGet("stats/tables")]
-    public async Task<IActionResult> GetCountByTable([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
+    public async Task<IActionResult> GetCountByTable([FromQuery] DateTime? from, [FromQuery] DateTime? to,
+        CancellationToken ct = default)
     {
         try
         {
@@ -101,13 +103,15 @@ public class LogsController : ControllerBase
     /// Manuel stok düzeltme işlemini loglar.
     /// </summary>
     [HttpPost("manual-stock-edit")]
-    public async Task<IActionResult> LogManualStockEdit([FromBody] ManualStockEditLogDto dto, CancellationToken ct = default)
+    public async Task<IActionResult> LogManualStockEdit([FromBody] ManualStockEditLogDto dto,
+        CancellationToken ct = default)
     {
         try
         {
             var success = await _logService.LogManualStockEditAsync(dto, ct);
-            return success ? Ok(new { message = "Manual stock edit logged successfully." })
-                           : BadRequest(new { message = "Manual stock edit logging failed." });
+            return success
+                ? Ok(new { message = "Manual stock edit logged successfully." })
+                : BadRequest(new { message = "Manual stock edit logging failed." });
         }
         catch (Exception ex)
         {

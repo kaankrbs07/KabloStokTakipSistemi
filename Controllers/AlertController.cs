@@ -1,5 +1,4 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using KabloStokTakipSistemi.Services.Interfaces;
 using KabloStokTakipSistemi.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +37,8 @@ public sealed class AlertController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Getting alerts with filters - IsActive: {IsActive}, AlertType: {AlertType}, Color: {Color}, MultiCableId: {MultiCableId}", 
+            _logger.LogInformation(
+                "Getting alerts with filters - IsActive: {IsActive}, AlertType: {AlertType}, Color: {Color}, MultiCableId: {MultiCableId}",
                 isActive, alertType, color, multiCableId);
             var list = await _alerts.GetAlertsAsync(isActive, alertType, color, multiCableId, from, to, skip, take, ct);
             _logger.LogInformation("Retrieved {Count} alerts", list.Count);
@@ -61,13 +61,13 @@ public sealed class AlertController : ControllerBase
         {
             _logger.LogInformation("Getting alert with ID: {AlertId}", alertId);
             var dto = await _alerts.GetByIdAsync(alertId, ct);
-            
+
             if (dto is null)
             {
                 _logger.LogWarning("Alert not found with ID: {AlertId}", alertId);
                 return NotFound();
             }
-            
+
             _logger.LogInformation("Retrieved alert with ID: {AlertId}", alertId);
             return Ok(dto);
         }
@@ -81,7 +81,7 @@ public sealed class AlertController : ControllerBase
     /// <summary>Belirli bir renk için aktif uyarı var mı?</summary>
     [HttpGet("has-active-for-color")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> HasActiveForColor([FromQuery][Required] string color, CancellationToken ct)
+    public async Task<IActionResult> HasActiveForColor([FromQuery] [Required] string color, CancellationToken ct)
     {
         try
         {
@@ -104,19 +104,20 @@ public sealed class AlertController : ControllerBase
     [HttpPost("{alertId:int}/resolve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Resolve([FromRoute] int alertId, [FromBody] ResolveRequest? body, CancellationToken ct)
+    public async Task<IActionResult> Resolve([FromRoute] int alertId, [FromBody] ResolveRequest? body,
+        CancellationToken ct)
     {
         try
         {
             _logger.LogInformation("Resolving alert with ID: {AlertId}", alertId);
             var ok = await _alerts.ResolveAsync(alertId, body?.Note, ct);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to resolve alert with ID: {AlertId}", alertId);
                 return NotFound();
             }
-            
+
             _logger.LogInformation("Successfully resolved alert with ID: {AlertId}", alertId);
             return NoContent();
         }
@@ -132,19 +133,20 @@ public sealed class AlertController : ControllerBase
     [HttpPost("{alertId:int}/reactivate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Reactivate([FromRoute] int alertId, [FromBody] ReactivateRequest? body, CancellationToken ct)
+    public async Task<IActionResult> Reactivate([FromRoute] int alertId, [FromBody] ReactivateRequest? body,
+        CancellationToken ct)
     {
         try
         {
             _logger.LogInformation("Reactivating alert with ID: {AlertId}", alertId);
             var ok = await _alerts.ReactivateAsync(alertId, body?.Reason, ct);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to reactivate alert with ID: {AlertId}", alertId);
                 return NotFound();
             }
-            
+
             _logger.LogInformation("Successfully reactivated alert with ID: {AlertId}", alertId);
             return NoContent();
         }
@@ -168,13 +170,13 @@ public sealed class AlertController : ControllerBase
         {
             _logger.LogInformation("Sending admin notification for alert ID: {AlertId}", alertId);
             var ok = await _alerts.NotifyAdminsForAlertAsync(alertId, ct);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to send admin notification for alert ID: {AlertId}", alertId);
                 return NotFound(new { message = "Alert bulunamadı veya admin e-postası yok." });
             }
-            
+
             _logger.LogInformation("Successfully sent admin notification for alert ID: {AlertId}", alertId);
             return Ok(new { message = "Adminlere e-posta gönderildi." });
         }
@@ -199,16 +201,17 @@ public sealed class AlertController : ControllerBase
                 _logger.LogWarning("Invalid model state for low stock notification request");
                 return ValidationProblem(ModelState);
             }
-            
-            _logger.LogInformation("Sending low stock notification for color: {Color}, quantity: {Qty}", body.Color, body.Qty);
+
+            _logger.LogInformation("Sending low stock notification for color: {Color}, quantity: {Qty}", body.Color,
+                body.Qty);
             var ok = await _alerts.NotifyAdminsForLowStockAsync(body.Color, body.Qty, ct);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to send low stock notification for color: {Color}", body.Color);
                 return NotFound(new { message = "Admin e-postası bulunamadı." });
             }
-            
+
             _logger.LogInformation("Successfully sent low stock notification for color: {Color}", body.Color);
             return Ok(new { message = $"{body.Color} rengi için stok uyarısı gönderildi.", body.Qty });
         }
@@ -221,7 +224,10 @@ public sealed class AlertController : ControllerBase
 
     // ---- Request bodies ----
     public sealed record ResolveRequest(string? Note);
+
     public sealed record ReactivateRequest(string? Reason);
-    public sealed record LowStockNotifyRequest([property: Required] string Color,
-                                               [property: Range(0, int.MaxValue)] int Qty);
+
+    public sealed record LowStockNotifyRequest(
+        [property: Required] string Color,
+        [property: Range(0, int.MaxValue)] int Qty);
 }

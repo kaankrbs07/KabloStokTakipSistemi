@@ -10,7 +10,7 @@ public class EmployeeController : ControllerBase
 {
     private readonly IEmployeeService _employeeService;
     private readonly ILogger<EmployeeController> _logger;
-    
+
     public EmployeeController(IEmployeeService employeeService, ILogger<EmployeeController> logger)
     {
         _employeeService = employeeService;
@@ -43,13 +43,13 @@ public class EmployeeController : ControllerBase
         {
             _logger.LogInformation("Getting employee with ID: {EmployeeId}", id);
             var employee = await _employeeService.GetEmployeeByIdAsync(id);
-            
+
             if (employee is null)
             {
                 _logger.LogWarning("Employee not found with ID: {EmployeeId}", id);
                 return NotFound(new { message = "Çalışan bulunamadı." });
             }
-            
+
             _logger.LogInformation("Retrieved employee: {EmployeeId}", id);
             return Ok(employee);
         }
@@ -68,7 +68,7 @@ public class EmployeeController : ControllerBase
         {
             _logger.LogInformation("Creating new employee with ID: {EmployeeId}", dto.EmployeeID);
             var ok = await _employeeService.CreateEmployeeAsync(dto);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to create employee with ID: {EmployeeId}", dto.EmployeeID);
@@ -76,7 +76,8 @@ public class EmployeeController : ControllerBase
             }
 
             _logger.LogInformation("Successfully created employee with ID: {EmployeeId}", dto.EmployeeID);
-            return CreatedAtRoute("GetEmployeeById", new { id = dto.EmployeeID }, new { message = "Çalışan oluşturuldu.", id = dto.EmployeeID });
+            return CreatedAtRoute("GetEmployeeById", new { id = dto.EmployeeID },
+                new { message = "Çalışan oluşturuldu.", id = dto.EmployeeID });
         }
         catch (Exception ex)
         {
@@ -91,9 +92,10 @@ public class EmployeeController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Updating department for employee ID: {EmployeeId} to department ID: {DepartmentId}", id, departmentId);
+            _logger.LogInformation("Updating department for employee ID: {EmployeeId} to department ID: {DepartmentId}",
+                id, departmentId);
             var ok = await _employeeService.UpdateEmployeeDepartmentAsync(id, departmentId);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to update department for employee ID: {EmployeeId}", id);

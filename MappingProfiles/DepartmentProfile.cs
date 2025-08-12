@@ -1,7 +1,6 @@
-﻿
-using AutoMapper;
-using KabloStokTakipSistemi.DTOs;      // GetDepartmentDto, CreateDepartmentDto, UpdateDepartmentDto
-using KabloStokTakipSistemi.Models;   // Department, Admin
+﻿using AutoMapper;
+using KabloStokTakipSistemi.DTOs; // GetDepartmentDto, CreateDepartmentDto, UpdateDepartmentDto
+using KabloStokTakipSistemi.Models; // Department, Admin
 
 namespace KabloStokTakipSistemi.MappingProfiles;
 
@@ -18,12 +17,12 @@ public class DepartmentProfile : Profile
 
         // Create DTO -> Entity
         CreateMap<CreateDepartmentDto, Department>()
-            .ForMember(e => e.DepartmentID, o => o.Ignore())       // PK DB oluşturur
-            .ForMember(e => e.CreatedAt,    o => o.Ignore());       // DB default/trigger’a bırak
+            .ForMember(e => e.DepartmentID, o => o.Ignore()) // PK DB oluşturur
+            .ForMember(e => e.CreatedAt, o => o.Ignore()); // DB default/trigger’a bırak
 
         // Update DTO -> Entity (CreatedAt asla değişmesin)
         CreateMap<UpdateDepartmentDto, Department>()
             .ForMember(e => e.DepartmentID, o => o.Ignore())
-            .ForMember(e => e.CreatedAt,    o => o.Ignore());
+            .ForMember(e => e.CreatedAt, o => o.Ignore());
     }
 }

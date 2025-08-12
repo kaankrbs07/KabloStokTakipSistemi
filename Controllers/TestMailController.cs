@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 namespace KabloStokTakipSistemi.Controllers;
+
 [ApiController]
 [Route("api/testmail")]
 public sealed class TestMailController : ControllerBase
@@ -17,6 +18,7 @@ public sealed class TestMailController : ControllerBase
         await _email.SendAsync(req.To, req.Subject, req.Html);
         return Ok(new { message = "Mail gönderildi." });
     }
+
     [HttpGet("send-test")]
     public async Task<IActionResult> SendTest()
     {

@@ -47,7 +47,7 @@ public sealed class CableProfile : Profile
     {
         // MultiCableContent -> GetMultiCableContentDto
         CreateMap<MultiCableContent, GetMultiCableContentDto>()
-            .ForMember(dest => dest.SingleCableColor, 
+            .ForMember(dest => dest.SingleCableColor,
                 opt => opt.MapFrom(src => src.SingleCable.Color));
 
         // CreateMultiCableContentDto -> MultiCableContent
@@ -58,7 +58,7 @@ public sealed class CableProfile : Profile
     {
         // CableThreshold -> GetCableThresholdDto
         CreateMap<CableThreshold, GetCableThresholdDto>()
-            .ForMember(dest => dest.CableName, 
+            .ForMember(dest => dest.CableName,
                 opt => opt.MapFrom(src => src.MultiCable != null ? src.MultiCable.CableName : string.Empty));
 
         // CreateCableThresholdDto -> CableThreshold

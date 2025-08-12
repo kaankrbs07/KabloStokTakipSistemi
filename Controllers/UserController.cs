@@ -10,7 +10,7 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<UsersController> _logger;
-    
+
     public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
         _userService = userService;
@@ -43,13 +43,13 @@ public class UsersController : ControllerBase
         {
             _logger.LogInformation("Getting user with ID: {UserId}", id);
             var user = await _userService.GetUserByIdAsync(id);
-            
+
             if (user is null)
             {
                 _logger.LogWarning("User not found with ID: {UserId}", id);
                 return NotFound(new { message = "Kullanıcı bulunamadı." });
             }
-            
+
             _logger.LogInformation("Retrieved user: {UserId}", id);
             return Ok(user);
         }
@@ -68,7 +68,7 @@ public class UsersController : ControllerBase
         {
             _logger.LogInformation("Creating new user with ID: {UserId}", dto.UserID);
             var ok = await _userService.CreateUserAsync(dto);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to create user with ID: {UserId}", dto.UserID);
@@ -76,7 +76,8 @@ public class UsersController : ControllerBase
             }
 
             _logger.LogInformation("Successfully created user with ID: {UserId}", dto.UserID);
-            return CreatedAtRoute("GetUserById", new { id = dto.UserID }, new { message = "Kullanıcı oluşturuldu.", id = dto.UserID });
+            return CreatedAtRoute("GetUserById", new { id = dto.UserID },
+                new { message = "Kullanıcı oluşturuldu.", id = dto.UserID });
         }
         catch (Exception ex)
         {
@@ -120,7 +121,7 @@ public class UsersController : ControllerBase
         {
             _logger.LogInformation("Deactivating user with ID: {UserId}", id);
             var ok = await _userService.DeactivateUserAsync(id);
-            
+
             if (!ok)
             {
                 _logger.LogWarning("Failed to deactivate user with ID: {UserId}", id);
@@ -145,13 +146,13 @@ public class UsersController : ControllerBase
         {
             _logger.LogInformation("Getting activity summary for user ID: {UserId}", id);
             var summary = await _userService.GetUserActivitySummaryAsync(id);
-            
+
             if (summary is null)
             {
                 _logger.LogWarning("Activity summary not found for user ID: {UserId}", id);
                 return NotFound(new { message = "Etkinlik özeti bulunamadı." });
             }
-            
+
             _logger.LogInformation("Retrieved activity summary for user ID: {UserId}", id);
             return Ok(summary);
         }
@@ -162,4 +163,3 @@ public class UsersController : ControllerBase
         }
     }
 }
-

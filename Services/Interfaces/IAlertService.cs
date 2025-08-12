@@ -1,4 +1,5 @@
 ﻿// Services/Interfaces/IAlertService.cs
+
 using KabloStokTakipSistemi.DTOs;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;

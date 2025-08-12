@@ -1,5 +1,4 @@
-﻿
-namespace KabloStokTakipSistemi.Middlewares
+﻿namespace KabloStokTakipSistemi.Middlewares
 {
     public class GlobalExceptionMiddleware
     {

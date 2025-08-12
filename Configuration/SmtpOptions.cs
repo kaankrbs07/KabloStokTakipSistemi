@@ -1,4 +1,5 @@
 ﻿// Configuration/SmtpOptions.cs
+
 namespace KabloStokTakipSistemi.Configuration
 {
     /// <summary>
@@ -13,8 +14,7 @@ namespace KabloStokTakipSistemi.Configuration
         public string Username { get; init; } = default!;
         public string Password { get; init; } = default!;
         public bool UseStartTls { get; init; } = false; // 587 için true
-        public bool UseSsl { get; init; } = true;       // 465 için true
+        public bool UseSsl { get; init; } = true; // 465 için true
         public bool UseOAuth2 { get; init; } = false;
     }
-
 }
