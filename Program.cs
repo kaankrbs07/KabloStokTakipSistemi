@@ -16,7 +16,7 @@ try
     builder.Logging.ClearProviders();
     builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
     builder.Host.UseNLog();
-    
+
     // DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -29,19 +29,20 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    // HTTP Context (gerekirse NLog MDLC vb. için)
+    // HTTP Context (NLog MDLC vb. için)
     builder.Services.AddHttpContextAccessor();
 
     // Servis katmanı (DI) kayıtları
-    builder.Services.AddScoped<UserService>();
-    builder.Services.AddScoped<CableService>();
-    builder.Services.AddScoped<AlertService>();
-    builder.Services.AddScoped<LogService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<ICableService, CableService>();
+    builder.Services.AddScoped<IAlertService, AlertService>();
+    builder.Services.AddScoped<ILogService, LogService>();
     builder.Services.AddScoped<IReportService, ReportService>();
-    builder.Services.AddScoped<EmailService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-
-    // JWT için bu kısıma Authentication/Authorization config eklenir
+    builder.Services.AddScoped<IAdminService, AdminService>();
+    builder.Services.AddScoped<IStockMovementService, StockMovementService>();
+    builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 
     var app = builder.Build();
 
@@ -56,8 +57,9 @@ try
     app.UseMiddleware<GlobalExceptionMiddleware>();
 
     app.UseHttpsRedirection();
-    
-    app.UseAuthentication();  // Yapılacak JWT için
+
+    // Auth (JWT eklendiğinde aktif olacak)
+    app.UseAuthentication();
     app.UseAuthorization();
 
     // SESSION_CONTEXT middleware (SP/trigger senaryoları için)
