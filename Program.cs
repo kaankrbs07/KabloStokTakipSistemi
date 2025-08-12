@@ -41,8 +41,9 @@ try
     builder.Services.AddScoped<LogService>();
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<EmailService>();
+    builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
-    // Eğer JWT kullanacaksan bu kısıma Authentication/Authorization config eklenir
+    // JWT için bu kısıma Authentication/Authorization config eklenir
 
     var app = builder.Build();
 
@@ -57,11 +58,8 @@ try
     app.UseMiddleware<GlobalExceptionMiddleware>();
 
     app.UseHttpsRedirection();
-
-    // CORS middleware - must be before Authentication/Authorization
-    app.UseCors("AllowFrontend");
-
-    app.UseAuthentication();  // JWT varsa gerekli
+    
+    app.UseAuthentication();  // Yapılacak JWT için
     app.UseAuthorization();
 
     // SESSION_CONTEXT middleware (SP/trigger senaryoları için)
