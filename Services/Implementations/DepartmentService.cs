@@ -51,15 +51,17 @@ public sealed class DepartmentService : IDepartmentService
     public async Task<IReadOnlyList<GetDepartmentDto>> GetAsync(
         int? adminId = null,
         string? search = null,
+        bool? isActive = null, // aktif/pasif filtresi
         int skip = 0,
         int take = 100,
         CancellationToken ct = default)
     {
         try
         {
-            _logger.LogInformation("Getting departments with filters - AdminId: {AdminId}, Search: {Search}, Skip: {Skip}, Take: {Take}", 
-                adminId, search, skip, take);
-            
+            _logger.LogInformation(
+                "Getting departments with filters - AdminId: {AdminId}, Search: {Search}, IsActive: {IsActive}, Skip: {Skip}, Take: {Take}",
+                adminId, search, isActive, skip, take);
+
             IQueryable<Department> q = _db.Departments.AsNoTracking();
 
             if (adminId is not null)
@@ -68,8 +70,12 @@ public sealed class DepartmentService : IDepartmentService
             if (!string.IsNullOrWhiteSpace(search))
                 q = q.Where(d => d.DepartmentName != null && d.DepartmentName.Contains(search));
 
-            q = q.OrderBy(d => d.DepartmentName).ThenBy(d => d.DepartmentID)
-                 .Skip(skip).Take(take);
+            if (isActive is not null)
+                q = q.Where(d => d.IsActive == isActive);
+
+            q = q.OrderBy(d => d.DepartmentName)
+                .ThenBy(d => d.DepartmentID)
+                .Skip(skip).Take(take);
 
             var result = await q.ProjectTo<GetDepartmentDto>(_mapper.ConfigurationProvider).ToListAsync(ct);
             _logger.LogInformation("Retrieved {Count} departments", result.Count);
@@ -81,6 +87,7 @@ public sealed class DepartmentService : IDepartmentService
             throw;
         }
     }
+
 
     public async Task<int> CreateAsync(CreateDepartmentDto dto, CancellationToken ct = default)
     {
@@ -163,30 +170,32 @@ public sealed class DepartmentService : IDepartmentService
         }
     }
 
-    public async Task<bool> DeleteAsync(int departmentId, CancellationToken ct = default)
+    public async Task<bool> DeactivateAsync(int departmentId, CancellationToken ct = default)
     {
         try
         {
-            _logger.LogInformation("Deleting department with ID: {DepartmentId}", departmentId);
-            
+            _logger.LogInformation("Deactivating department with ID: {DepartmentId}", departmentId);
+
             var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
             if (entity is null)
             {
-                _logger.LogWarning("Department not found for deletion with ID: {DepartmentId}", departmentId);
+                _logger.LogWarning("Department not found for deactivation with ID: {DepartmentId}", departmentId);
                 return false;
             }
 
-            _db.Departments.Remove(entity);
+            entity.IsActive = false;
             await _db.SaveChangesAsync(ct);
-            _logger.LogInformation("Successfully deleted department with ID: {DepartmentId}", departmentId);
+
+            _logger.LogInformation("Successfully deactivated department with ID: {DepartmentId}", departmentId);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting department with ID: {DepartmentId}", departmentId);
+            _logger.LogError(ex, "Error deactivating department with ID: {DepartmentId}", departmentId);
             throw;
         }
     }
+
 
     public async Task<bool> ExistsByNameAsync(string departmentName, CancellationToken ct = default)
     {

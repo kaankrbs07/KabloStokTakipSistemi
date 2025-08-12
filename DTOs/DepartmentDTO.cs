@@ -19,5 +19,7 @@ public record GetDepartmentDto
     public string? DepartmentName { get; init; }
     public int AdminID { get; init; }
     public DateTime CreatedAt { get; init; }
+    
+    public bool IsActive { get; set; }
 }
 

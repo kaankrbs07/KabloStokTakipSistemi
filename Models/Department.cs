@@ -14,6 +14,8 @@ public class Department
     public long AdminID { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    
+    public bool IsActive { get; set; }
 
     public Admin? Admin { get; set; } 
     public ICollection<User> Users { get; set; } = new List<User>();

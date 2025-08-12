@@ -9,13 +9,14 @@ public interface IDepartmentService
     Task<IReadOnlyList<GetDepartmentDto>> GetAsync(
         int? adminId = null,
         string? search = null,
+        bool? isActive = null,
         int skip = 0,
         int take = 100,
         CancellationToken ct = default);
 
     Task<int> CreateAsync(CreateDepartmentDto dto, CancellationToken ct = default);
     Task<bool> UpdateAsync(int departmentId, UpdateDepartmentDto dto, CancellationToken ct = default);
-    Task<bool> DeleteAsync(int departmentId, CancellationToken ct = default);
+    Task<bool> DeactivateAsync(int departmentId, CancellationToken ct = default);
 
     Task<bool> ExistsByNameAsync(string departmentName, CancellationToken ct = default);
 }
