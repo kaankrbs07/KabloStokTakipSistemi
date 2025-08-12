@@ -17,4 +17,10 @@ public sealed class TestMailController : ControllerBase
         await _email.SendAsync(req.To, req.Subject, req.Html);
         return Ok(new { message = "Mail gönderildi." });
     }
+    [HttpGet("send-test")]
+    public async Task<IActionResult> SendTest()
+    {
+        await _email.SendAsync("kadirtokagoz6@gmail.com", "Test Mail", "<b>Merhaba, TEST MAİL</b>");
+        return Ok(new { message = "Test mail gönderildi." });
+    }
 }

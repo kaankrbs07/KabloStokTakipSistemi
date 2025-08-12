@@ -1,80 +1,103 @@
-using KabloStokTakipSistemi.Middlewares;
+using System.Reflection;
+using KabloStokTakipSistemi.Configuration;
 using KabloStokTakipSistemi.Data;
-using Microsoft.EntityFrameworkCore;
-using NLog.Web;
+using KabloStokTakipSistemi.Middlewares;
 using KabloStokTakipSistemi.Services.Implementations;
 using KabloStokTakipSistemi.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
-NLog.LogManager.Setup().LoadConfigurationFromAppSettings();
-var logger = NLog.LogManager.GetCurrentClassLogger();
+var builder = WebApplication.CreateBuilder(args);
 
-try
+// -------------------------------------------------------
+// Configuration
+// -------------------------------------------------------
+var configuration = builder.Configuration;
+
+// -------------------------------------------------------
+// Services (DI)
+// -------------------------------------------------------
+
+// DbContext (MSSQL)
+builder.Services.AddDbContext<AppDbContext>(opt =>
 {
-    var builder = WebApplication.CreateBuilder(args);
+    var cs = configuration.GetConnectionString("DefaultConnection");
+    opt.UseSqlServer(cs);
+});
 
-    // NLog
-    builder.Logging.ClearProviders();
-    builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
-    builder.Host.UseNLog();
+// AutoMapper (mevcut tüm profilleri tara)
+builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-    // DbContext
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-    // AutoMapper: MappingProfiles klasöründeki tüm profilleri tara
-    builder.Services.AddAutoMapper(typeof(Program).Assembly);
-
-    // Swagger & Controller
-    builder.Services.AddControllers();
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
-    // HTTP Context (NLog MDLC vb. için)
-    builder.Services.AddHttpContextAccessor();
-
-    // Servis katmanı (DI) kayıtları
-    builder.Services.AddScoped<IUserService, UserService>();
-    builder.Services.AddScoped<ICableService, CableService>();
-    builder.Services.AddScoped<IAlertService, AlertService>();
-    builder.Services.AddScoped<ILogService, LogService>();
-    builder.Services.AddScoped<IReportService, ReportService>();
-    builder.Services.AddScoped<IEmailService, EmailService>();
-    builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-    builder.Services.AddScoped<IAdminService, AdminService>();
-    builder.Services.AddScoped<IStockMovementService, StockMovementService>();
-    builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-
-    var app = builder.Build();
-
-    // Swagger
-    if (app.Environment.IsDevelopment())
+// Controller + JSON
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        // İstersen enum/string tercihleri, camelCase vs. burada ayarlanır
+        // o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 
-    // Global hataları yakala (Error seviyesinde NLog'a düşer)
-    app.UseMiddleware<GlobalExceptionMiddleware>();
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-    app.UseHttpsRedirection();
-
-    // Auth (JWT eklendiğinde aktif olacak)
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // SESSION_CONTEXT middleware (SP/trigger senaryoları için)
-    app.UseMiddleware<SessionContextMiddleware>();
-
-    app.MapControllers();
-
-    app.Run();
-}
-catch (Exception ex)
+// CORS (gerekirse aç/kapat)
+builder.Services.AddCors(opt =>
 {
-    logger.Error(ex, "Program başlatılırken fatal bir hata oluştu");
-    throw;
-}
-finally
+    opt.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
+// SMTP Options bind + EmailService
+builder.Services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Domain servis kayıtları
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ICableService, CableService>();
+builder.Services.AddScoped<IStockMovementService, StockMovementService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<ILogService, LogService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+
+// (Opsiyonel) Auth – JWT gelecekte eklenecekse burada konumlanır
+// builder.Services.AddAuthentication(options => { ... })
+//     .AddJwtBearer(options => { ... });
+// builder.Services.AddAuthorization();
+
+// -------------------------------------------------------
+// Build
+// -------------------------------------------------------
+var app = builder.Build();
+
+// -------------------------------------------------------
+// Middleware pipeline
+// -------------------------------------------------------
+
+if (app.Environment.IsDevelopment())
 {
-    NLog.LogManager.Shutdown();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+// Hata yakalama (ilklerde olsun ki hepsini kapsasın)
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+// (JWT kullanıyorsan uncomment et)
+// app.UseAuthentication();
+app.UseAuthorization();
+
+// DB session context middleware (kullanıcı id'sini MSSQL SESSION_CONTEXT'e yazar)
+app.UseMiddleware<SessionContextMiddleware>();
+
+app.MapControllers();
+
+app.Run();
