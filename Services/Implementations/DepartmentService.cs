@@ -1,4 +1,5 @@
 ﻿// Services/DepartmentService.cs
+
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.Data;
@@ -93,19 +94,21 @@ public sealed class DepartmentService : IDepartmentService
     {
         try
         {
-            _logger.LogInformation("Creating department with name: {DepartmentName}, AdminId: {AdminId}", dto.DepartmentName, dto.AdminID);
-            
+            _logger.LogInformation("Creating department with name: {DepartmentName}, AdminId: {AdminId}",
+                dto.DepartmentName, dto.AdminID);
+
             // Temel doğrulama (DB'de NULL olsa bile uygulama seviyesinde boş bırakmıyoruz)
             if (string.IsNullOrWhiteSpace(dto.DepartmentName))
             {
                 _logger.LogWarning("Department creation failed - DepartmentName is empty");
                 throw new ArgumentException("DepartmentName boş olamaz.");
             }
-            
+
             var exists = await _db.Departments.AnyAsync(d => d.DepartmentName == dto.DepartmentName, ct);
             if (exists)
             {
-                _logger.LogWarning("Department creation failed - Department name already exists: {DepartmentName}", dto.DepartmentName);
+                _logger.LogWarning("Department creation failed - Department name already exists: {DepartmentName}",
+                    dto.DepartmentName);
                 throw new InvalidOperationException("Bu departman adı zaten mevcut.");
             }
 
@@ -117,7 +120,7 @@ public sealed class DepartmentService : IDepartmentService
             };
 
             _db.Departments.Add(entity);
-            
+
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Successfully created department with ID: {DepartmentId}", entity.DepartmentID);
             return entity.DepartmentID;
@@ -133,8 +136,9 @@ public sealed class DepartmentService : IDepartmentService
     {
         try
         {
-            _logger.LogInformation("Updating department with ID: {DepartmentId}, Name: {DepartmentName}", departmentId, dto.DepartmentName);
-            
+            _logger.LogInformation("Updating department with ID: {DepartmentId}, Name: {DepartmentName}", departmentId,
+                dto.DepartmentName);
+
             var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
             if (entity is null)
             {
@@ -144,21 +148,23 @@ public sealed class DepartmentService : IDepartmentService
 
             if (string.IsNullOrWhiteSpace(dto.DepartmentName))
             {
-                _logger.LogWarning("Department update failed - DepartmentName is empty for ID: {DepartmentId}", departmentId);
+                _logger.LogWarning("Department update failed - DepartmentName is empty for ID: {DepartmentId}",
+                    departmentId);
                 throw new ArgumentException("DepartmentName boş olamaz.");
             }
-            
+
             var nameClash = await _db.Departments
                 .AnyAsync(d => d.DepartmentID != departmentId && d.DepartmentName == dto.DepartmentName, ct);
             if (nameClash)
             {
-                _logger.LogWarning("Department update failed - Department name already exists: {DepartmentName}", dto.DepartmentName);
+                _logger.LogWarning("Department update failed - Department name already exists: {DepartmentName}",
+                    dto.DepartmentName);
                 throw new InvalidOperationException("Bu departman adı zaten mevcut.");
             }
 
             entity.DepartmentName = dto.DepartmentName.Trim();
             entity.AdminID = dto.AdminID;
-            
+
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Successfully updated department with ID: {DepartmentId}", departmentId);
             return true;
@@ -206,7 +212,7 @@ public sealed class DepartmentService : IDepartmentService
                 _logger.LogWarning("Checking department existence with empty name");
                 return false;
             }
-            
+
             _logger.LogInformation("Checking if department exists with name: {DepartmentName}", departmentName);
             var exists = await _db.Departments.AsNoTracking().AnyAsync(d => d.DepartmentName == departmentName, ct);
             _logger.LogInformation("Department exists with name {DepartmentName}: {Exists}", departmentName, exists);

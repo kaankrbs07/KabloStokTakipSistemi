@@ -10,7 +10,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
     {
         private readonly AppDbContext _db;
         private readonly ILogger<StockMovementService> _logger;
-        
+
         public StockMovementService(AppDbContext db, ILogger<StockMovementService> logger)
         {
             _db = db;
@@ -21,9 +21,10 @@ namespace KabloStokTakipSistemi.Services.Implementations
         {
             try
             {
-                _logger.LogInformation("Inserting stock movement - CableID: {CableId}, TableName: {TableName}, Quantity: {Quantity}, MovementType: {MovementType}, UserID: {UserId}", 
+                _logger.LogInformation(
+                    "Inserting stock movement - CableID: {CableId}, TableName: {TableName}, Quantity: {Quantity}, MovementType: {MovementType}, UserID: {UserId}",
                     dto.CableID, dto.TableName, dto.Quantity, dto.MovementType, dto.UserID);
-                
+
                 var p = new[]
                 {
                     new SqlParameter("@CableID", dto.CableID),
@@ -55,7 +56,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                     .FromSqlRaw("EXEC dbo.sp_GetStockMovementHistory")
                     .AsNoTracking()
                     .ToListAsync();
-                
+
                 _logger.LogInformation("Retrieved {Count} stock movements from history", result.Count());
                 return result;
             }
@@ -70,9 +71,10 @@ namespace KabloStokTakipSistemi.Services.Implementations
         {
             try
             {
-                _logger.LogInformation("Getting filtered stock movement history - TableName: {TableName}, CableName: {CableName}, Color: {Color}, UserID: {UserId}", 
+                _logger.LogInformation(
+                    "Getting filtered stock movement history - TableName: {TableName}, CableName: {CableName}, Color: {Color}, UserID: {UserId}",
                     f.TableName, f.CableName, f.Color, f.UserID);
-                
+
                 var p = new[]
                 {
                     new SqlParameter("@TableName", (object?)f.TableName ?? DBNull.Value),
@@ -89,7 +91,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                         p)
                     .AsNoTracking()
                     .ToListAsync();
-                
+
                 _logger.LogInformation("Retrieved {Count} filtered stock movements", result.Count());
                 return result;
             }

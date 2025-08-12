@@ -22,9 +22,9 @@ namespace KabloStokTakipSistemi.Services.Implementations
         private readonly ILogger<EmailService> _log;
 
         // Basit retry ayarları (opsiyonlarız yoksa burada sabitleyelim)
-        private const int DefaultTimeoutMs = 10000;   // SmtpClient.Timeout
-        private const int MaxRetries       = 2;       // toplam deneme: 1 + MaxRetries
-        private const int RetryDelayMs     = 1500;
+        private const int DefaultTimeoutMs = 10000; // SmtpClient.Timeout
+        private const int MaxRetries = 2; // toplam deneme: 1 + MaxRetries
+        private const int RetryDelayMs = 1500;
 
         public EmailService(IOptions<SmtpOptions> options, ILogger<EmailService> log)
         {
@@ -117,13 +117,21 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    _log.LogWarning(ex, "E-posta gönderim denemesi başarısız. To={To}; Subject={Subject}; Attempt={Attempt}",
+                    _log.LogWarning(ex,
+                        "E-posta gönderim denemesi başarısız. To={To}; Subject={Subject}; Attempt={Attempt}",
                         to, subject, attempt);
 
                     if (attempt > MaxRetries)
                         break;
 
-                    try { await Task.Delay(RetryDelayMs, ct); } catch { /* ignore */ }
+                    try
+                    {
+                        await Task.Delay(RetryDelayMs, ct);
+                    }
+                    catch
+                    {
+                        /* ignore */
+                    }
                 }
             }
 
@@ -135,9 +143,9 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
         private static SecureSocketOptions ChooseSecureSocketOption(int port, bool useStartTls)
         {
-            if (port == 465) return SecureSocketOptions.SslOnConnect;          // Gmail/SSL
+            if (port == 465) return SecureSocketOptions.SslOnConnect; // Gmail/SSL
             if (port == 587 && useStartTls) return SecureSocketOptions.StartTls; // STARTTLS
-            return SecureSocketOptions.Auto;                                     // diğerleri
+            return SecureSocketOptions.Auto; // diğerleri
         }
 
         private static bool TryAddMailbox(InternetAddressList list, string? address)
@@ -161,6 +169,3 @@ namespace KabloStokTakipSistemi.Services.Implementations
         }
     }
 }
-
-
-

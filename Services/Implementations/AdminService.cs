@@ -1,4 +1,5 @@
 ﻿// Services/AdminService.cs
+
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Models;
@@ -12,7 +13,7 @@ public class AdminService : IAdminService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<AdminService> _logger;
-    
+
     public AdminService(AppDbContext context, ILogger<AdminService> logger)
     {
         _context = context;
@@ -33,9 +34,9 @@ public class AdminService : IAdminService
             return admins.Select(a => new GetAdminDto(
                 a.AdminID,
                 a.Username,
-                a.DepartmentName,           // Admins tablosu
-                a.User?.FirstName,          // Users tablosu
-                a.User?.LastName            // Users tablosu
+                a.DepartmentName, // Admins tablosu
+                a.User?.FirstName, // Users tablosu
+                a.User?.LastName // Users tablosu
             ));
         }
         catch (Exception ex)
@@ -81,7 +82,8 @@ public class AdminService : IAdminService
     {
         try
         {
-            _logger.LogInformation("Creating admin with UserID: {UserId}, Username: {Username}", userDto.UserID, adminDto.Username);
+            _logger.LogInformation("Creating admin with UserID: {UserId}, Username: {Username}", userDto.UserID,
+                adminDto.Username);
             var parameters = new[]
             {
                 new SqlParameter("@UserID", userDto.UserID),
@@ -121,9 +123,10 @@ public class AdminService : IAdminService
     {
         try
         {
-            _logger.LogInformation("Updating department for admin ID: {AdminId} to: {DepartmentName}", adminId, newDepartmentName);
+            _logger.LogInformation("Updating department for admin ID: {AdminId} to: {DepartmentName}", adminId,
+                newDepartmentName);
             var admin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == adminId);
-            
+
             if (admin is null)
             {
                 _logger.LogWarning("Admin not found with ID: {AdminId}", adminId);
@@ -142,7 +145,7 @@ public class AdminService : IAdminService
             {
                 _logger.LogWarning("Failed to save changes for admin ID: {AdminId}", adminId);
             }
-            
+
             return result;
         }
         catch (Exception ex)
@@ -152,4 +155,3 @@ public class AdminService : IAdminService
         }
     }
 }
-

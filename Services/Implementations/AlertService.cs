@@ -41,12 +41,12 @@ public sealed class AlertService : IAlertService
     {
         IQueryable<Alert> q = _db.Alerts.AsNoTracking();
 
-        if (isActive is not null)                  q = q.Where(a => a.IsActive == isActive);
+        if (isActive is not null) q = q.Where(a => a.IsActive == isActive);
         if (!string.IsNullOrWhiteSpace(alertType)) q = q.Where(a => a.AlertType == alertType);
-        if (!string.IsNullOrWhiteSpace(color))     q = q.Where(a => a.Color == color);
-        if (multiCableId is not null)              q = q.Where(a => a.MultiCableID == multiCableId);
-        if (from is not null)                      q = q.Where(a => a.AlertDate >= from);
-        if (to is not null)                        q = q.Where(a => a.AlertDate <= to);
+        if (!string.IsNullOrWhiteSpace(color)) q = q.Where(a => a.Color == color);
+        if (multiCableId is not null) q = q.Where(a => a.MultiCableID == multiCableId);
+        if (from is not null) q = q.Where(a => a.AlertDate >= from);
+        if (to is not null) q = q.Where(a => a.AlertDate <= to);
 
         q = q.OrderByDescending(a => a.AlertDate).ThenBy(a => a.AlertID);
 
@@ -118,7 +118,6 @@ public sealed class AlertService : IAlertService
     }
 
 
-
     // -------------------- EMAIL NOTIFICATIONS --------------------
 
     /// <summary>
@@ -142,14 +141,15 @@ public sealed class AlertService : IAlertService
 
         if (adminEmails.Count == 0)
         {
-            _log.LogInformation("NotifyAdminsForAlertAsync: AlertID {AlertID} için admin e-postası bulunamadı.", alertId);
+            _log.LogInformation("NotifyAdminsForAlertAsync: AlertID {AlertID} için admin e-postası bulunamadı.",
+                alertId);
             return false;
         }
 
         var (subject, html, text) = BuildAlertEmail(alert);
 
         await _email.SendAsync(
-            to: adminEmails[0],          // To zorunlu olduğundan ilk adresi To,
+            to: adminEmails[0], // To zorunlu olduğundan ilk adresi To,
             subject: subject,
             htmlBody: html,
             textBody: text,
@@ -175,7 +175,8 @@ public sealed class AlertService : IAlertService
 
         if (adminEmails.Count == 0)
         {
-            _log.LogInformation("NotifyAdminsForLowStockAsync: Admin e-postası bulunamadı. Color={Color}, Qty={Qty}", color, qty);
+            _log.LogInformation("NotifyAdminsForLowStockAsync: Admin e-postası bulunamadı. Color={Color}, Qty={Qty}",
+                color, qty);
             return false;
         }
 
@@ -208,7 +209,7 @@ public sealed class AlertService : IAlertService
         {
             "Color" => $"Stok Uyarısı • {a.Color} rengi",
             "Multi" => $"Stok Uyarısı • MultiCable #{a.MultiCableID}",
-            _       => "Stok Uyarısı"
+            _ => "Stok Uyarısı"
         };
 
         var html = $@"
@@ -234,5 +235,3 @@ public sealed class AlertService : IAlertService
         return (subject, html, text);
     }
 }
-
-

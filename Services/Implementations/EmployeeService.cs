@@ -11,7 +11,7 @@ public class EmployeeService : IEmployeeService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<EmployeeService> _logger;
-    
+
     public EmployeeService(AppDbContext context, ILogger<EmployeeService> logger)
     {
         _context = context;
@@ -51,7 +51,7 @@ public class EmployeeService : IEmployeeService
             _logger.LogInformation("Getting employee by ID: {EmployeeId}", employeeId);
             var e = await _context.Employees
                 .Include(x => x.User)
-               .ThenInclude(u => u!.Department)
+                .ThenInclude(u => u!.Department)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EmployeeID == employeeId);
 
@@ -82,7 +82,8 @@ public class EmployeeService : IEmployeeService
         await using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
-            _logger.LogInformation("Creating employee with ID: {EmployeeId}, UserID: {UserId}", dto.EmployeeID, dto.UserID);
+            _logger.LogInformation("Creating employee with ID: {EmployeeId}, UserID: {UserId}", dto.EmployeeID,
+                dto.UserID);
             var p = new[]
             {
                 new SqlParameter("@UserID", dto.UserID),
@@ -120,61 +121,60 @@ public class EmployeeService : IEmployeeService
 
     // Department'ı Users tablosunda değiştiriyoruz (Employee->User join)
     public async Task<bool> UpdateEmployeeDepartmentAsync(long employeeId, int newDepartmentId)
-{
-    try
     {
-        _logger.LogInformation("Updating department for employee ID: {EmployeeId} to department ID: {DepartmentId}",
-            employeeId, newDepartmentId);
-
-        // 1) Department var mı? Yoksa erken çık.
-        var deptExists = await _context.Departments
-            .AsNoTracking()
-            .AnyAsync(d => d.DepartmentID == newDepartmentId);
-
-        if (!deptExists)
+        try
         {
-            _logger.LogWarning("Department not found with ID: {DepartmentId}", newDepartmentId);
+            _logger.LogInformation("Updating department for employee ID: {EmployeeId} to department ID: {DepartmentId}",
+                employeeId, newDepartmentId);
+
+            // 1) Department var mı? Yoksa erken çık.
+            var deptExists = await _context.Departments
+                .AsNoTracking()
+                .AnyAsync(d => d.DepartmentID == newDepartmentId);
+
+            if (!deptExists)
+            {
+                _logger.LogWarning("Department not found with ID: {DepartmentId}", newDepartmentId);
+                return false;
+            }
+
+            // Employee var mı?
+            var emp = await _context.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
+
+            if (emp is null)
+            {
+                _logger.LogWarning("Employee not found with ID: {EmployeeId}", employeeId);
+                return false;
+            }
+
+            // sp_UpdateUsers: NULL verilen alanlara dokunmuyor.
+            var p = new[]
+            {
+                new SqlParameter("@UserID", emp.UserID),
+                new SqlParameter("@FirstName", DBNull.Value),
+                new SqlParameter("@LastName", DBNull.Value),
+                new SqlParameter("@Email", DBNull.Value),
+                new SqlParameter("@PhoneNumber", DBNull.Value),
+                new SqlParameter("@DepartmentID", newDepartmentId),
+                new SqlParameter("@IsActive", DBNull.Value),
+                new SqlParameter("@Role", DBNull.Value),
+                new SqlParameter("@Password", DBNull.Value)
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
+                p);
+
+            _logger.LogInformation("Successfully updated department for employee ID: {EmployeeId}", employeeId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 2) İstisna fırlatmak yerine logla ve false dön (tutarlı bool sözleşmesi).
+            _logger.LogError(ex, "Error updating department for employee ID: {EmployeeId}", employeeId);
             return false;
         }
-
-        // Employee var mı?
-        var emp = await _context.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
-
-        if (emp is null)
-        {
-            _logger.LogWarning("Employee not found with ID: {EmployeeId}", employeeId);
-            return false;
-        }
-
-        // sp_UpdateUsers: NULL verilen alanlara dokunmuyor.
-        var p = new[]
-        {
-            new SqlParameter("@UserID", emp.UserID),
-            new SqlParameter("@FirstName", DBNull.Value),
-            new SqlParameter("@LastName", DBNull.Value),
-            new SqlParameter("@Email", DBNull.Value),
-            new SqlParameter("@PhoneNumber", DBNull.Value),
-            new SqlParameter("@DepartmentID", newDepartmentId),
-            new SqlParameter("@IsActive", DBNull.Value),
-            new SqlParameter("@Role", DBNull.Value),
-            new SqlParameter("@Password", DBNull.Value)
-        };
-
-        await _context.Database.ExecuteSqlRawAsync(
-            "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
-            p);
-
-        _logger.LogInformation("Successfully updated department for employee ID: {EmployeeId}", employeeId);
-        return true;
     }
-    catch (Exception ex)
-    {
-        // 2) İstisna fırlatmak yerine logla ve false dön (tutarlı bool sözleşmesi).
-        _logger.LogError(ex, "Error updating department for employee ID: {EmployeeId}", employeeId);
-        return false;
-    }
-}
-
 }

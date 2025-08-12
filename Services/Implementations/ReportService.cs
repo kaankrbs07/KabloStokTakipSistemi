@@ -23,7 +23,7 @@ public sealed class ReportService : IReportService
         try
         {
             _logger.LogInformation("Getting user activity summary for user ID: {UserId}", userId);
-            
+
             // EXEC dbo.sp_GetUserActivitySummary @UserID = {userId}
             var rows = await _db.Database
                 .SqlQueryRaw<UserActivitySummaryDto>(
@@ -39,7 +39,7 @@ public sealed class ReportService : IReportService
             {
                 _logger.LogInformation("Retrieved user activity summary for user ID: {UserId}", userId);
             }
-            
+
             return result;
         }
         catch (Exception ex)
@@ -55,7 +55,7 @@ public sealed class ReportService : IReportService
         try
         {
             _logger.LogInformation("Getting monthly report for multi cables");
-            
+
             // Kolonlar: Color, TotalExitFromMultiCables (son 30 gün, Multi & Çıkış) 
             // sp_GetMonthlyReport_MultiCables
             var rows = await _db.Database
@@ -79,7 +79,7 @@ public sealed class ReportService : IReportService
         try
         {
             _logger.LogInformation("Getting monthly report for single cables");
-            
+
             // Top 5 renk; CurrentMonthUsage, PreviousMonthUsage, UsageDifference kolonları
             // sp_GetMonthlyReport_SingleCables
             var rows = await _db.Database
@@ -97,4 +97,3 @@ public sealed class ReportService : IReportService
         }
     }
 }
-

@@ -130,7 +130,8 @@ public class UserService : IUserService
 
                 // Security alanları: boş/whitespace ise NULL gönder.
                 new SqlParameter("@Role", string.IsNullOrWhiteSpace(dto.Role) ? (object)DBNull.Value : dto.Role),
-                new SqlParameter("@Password", string.IsNullOrWhiteSpace(dto.Password) ? (object)DBNull.Value : dto.Password)
+                new SqlParameter("@Password",
+                    string.IsNullOrWhiteSpace(dto.Password) ? (object)DBNull.Value : dto.Password)
             };
 
             await _context.Database.ExecuteSqlRawAsync(

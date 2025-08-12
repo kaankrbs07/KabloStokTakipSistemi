@@ -2,7 +2,7 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.DTOs;
-using KabloStokTakipSistemi.Models; 
+using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +11,10 @@ namespace KabloStokTakipSistemi.Services.Implementations
 {
     public sealed class LogService : ILogService
     {
-        private readonly AppDbContext _db;             
+        private readonly AppDbContext _db;
         private readonly IMapper _mapper;
 
-        
+
         public LogService(AppDbContext db, IMapper mapper)
         {
             _db = db;
@@ -44,16 +44,17 @@ namespace KabloStokTakipSistemi.Services.Implementations
             if (!string.IsNullOrWhiteSpace(filter.Search))
                 q = q.Where(x => x.Description != null && x.Description.Contains(filter.Search!));
 
-            q = filter.Desc ? q.OrderByDescending(x => x.LogDate).ThenByDescending(x => x.LogID)
-                            : q.OrderBy(x => x.LogDate).ThenBy(x => x.LogID);
+            q = filter.Desc
+                ? q.OrderByDescending(x => x.LogDate).ThenByDescending(x => x.LogID)
+                : q.OrderBy(x => x.LogDate).ThenBy(x => x.LogID);
 
             var total = await q.CountAsync(ct);
 
             int skip = (Math.Max(1, filter.Page) - 1) * Math.Max(1, filter.PageSize);
             var items = await q.Skip(skip)
-                               .Take(filter.PageSize)
-                               .ProjectTo<LogDto>(_mapper.ConfigurationProvider)
-                               .ToListAsync(ct);
+                .Take(filter.PageSize)
+                .ProjectTo<LogDto>(_mapper.ConfigurationProvider)
+                .ToListAsync(ct);
 
             return new PagedResult<LogDto>(items, total, filter.Page, filter.PageSize);
         }
@@ -63,44 +64,46 @@ namespace KabloStokTakipSistemi.Services.Implementations
             take = take <= 0 ? 50 : take;
 
             var items = await _db.Set<Log>()
-                                 .AsNoTracking()
-                                 .OrderByDescending(x => x.LogDate)
-                                 .ThenByDescending(x => x.LogID)
-                                 .Take(take)
-                                 .ProjectTo<LogDto>(_mapper.ConfigurationProvider)
-                                 .ToListAsync(ct);
+                .AsNoTracking()
+                .OrderByDescending(x => x.LogDate)
+                .ThenByDescending(x => x.LogID)
+                .Take(take)
+                .ProjectTo<LogDto>(_mapper.ConfigurationProvider)
+                .ToListAsync(ct);
 
             return items;
         }
 
-        public async Task<IReadOnlyList<LogStatDto>> GetCountByOperationAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+        public async Task<IReadOnlyList<LogStatDto>> GetCountByOperationAsync(DateTime? from = null,
+            DateTime? to = null, CancellationToken ct = default)
         {
             IQueryable<Log> q = _db.Set<Log>().AsNoTracking();
             if (from.HasValue) q = q.Where(x => x.LogDate >= from.Value);
-            if (to.HasValue)   q = q.Where(x => x.LogDate <= to.Value);
+            if (to.HasValue) q = q.Where(x => x.LogDate <= to.Value);
 
             var list = await q.GroupBy(x => x.Operation)
                 .Select(g => new LogStatDto(g.Key ?? string.Empty, g.Count()))
-                              .OrderByDescending(x => x.Count)
-                              .ToListAsync(ct);
+                .OrderByDescending(x => x.Count)
+                .ToListAsync(ct);
 
             return list;
         }
 
-        public async Task<IReadOnlyList<LogStatDto>> GetCountByTableAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+        public async Task<IReadOnlyList<LogStatDto>> GetCountByTableAsync(DateTime? from = null, DateTime? to = null,
+            CancellationToken ct = default)
         {
             IQueryable<Log> q = _db.Set<Log>().AsNoTracking();
             if (from.HasValue) q = q.Where(x => x.LogDate >= from.Value);
-            if (to.HasValue)   q = q.Where(x => x.LogDate <= to.Value);
+            if (to.HasValue) q = q.Where(x => x.LogDate <= to.Value);
 
             var list = await q.GroupBy(x => x.TableName)
                 .Select(g => new LogStatDto(g.Key ?? string.Empty, g.Count()))
-                              .OrderByDescending(x => x.Count)
-                              .ToListAsync(ct);
+                .OrderByDescending(x => x.Count)
+                .ToListAsync(ct);
 
             return list;
         }
-        
+
         public async Task<bool> LogManualStockEditAsync(ManualStockEditLogDto dto, CancellationToken ct = default)
         {
             // SP: dbo.sp_LogManualStockEdit @CableID, @TableName, @OldQuantity, @NewQuantity, @EditedByUserID, @Reason
@@ -115,7 +118,8 @@ namespace KabloStokTakipSistemi.Services.Implementations
             };
 
             var rows = await _db.Database.ExecuteSqlRawAsync(
-                "EXEC dbo.sp_LogManualStockEdit @CableID, @TableName, @OldQuantity, @NewQuantity, @EditedByUserID, @Reason", p, ct);
+                "EXEC dbo.sp_LogManualStockEdit @CableID, @TableName, @OldQuantity, @NewQuantity, @EditedByUserID, @Reason",
+                p, ct);
 
             return rows >= 0; // SP sadece INSERT/RAISERROR yapıyor
         }
