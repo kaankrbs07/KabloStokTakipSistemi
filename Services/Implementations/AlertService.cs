@@ -4,8 +4,9 @@ using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+
 
 namespace KabloStokTakipSistemi.Services.Implementations;
 
@@ -107,12 +108,16 @@ public sealed class AlertService : IAlertService
 
     public async Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default)
     {
+        var p = new SqlParameter("@Color", color);
+
         var result = await _db.Database
-            .SqlQueryRaw<int>("SELECT dbo.fn_HasActiveAlertForColor(@p0)", parameters: [color])
+            .SqlQueryRaw<bool>("SELECT dbo.fn_HasActiveAlertForColor(@Color)", p)
             .FirstAsync(ct);
 
-        return result == 1;
+        return result;
     }
+
+
 
     // -------------------- EMAIL NOTIFICATIONS --------------------
 
