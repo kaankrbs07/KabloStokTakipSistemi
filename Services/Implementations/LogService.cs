@@ -2,7 +2,7 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.DTOs;
-using KabloStokTakipSistemi.Models; // Log entity burada olmalı
+using KabloStokTakipSistemi.Models; 
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

@@ -1,4 +1,4 @@
-﻿// Controllers/AlertController.cs
+﻿
 using System.ComponentModel.DataAnnotations;
 using KabloStokTakipSistemi.Services.Interfaces;
 using KabloStokTakipSistemi.DTOs;
@@ -12,8 +12,13 @@ namespace KabloStokTakipSistemi.Controllers;
 public sealed class AlertController : ControllerBase
 {
     private readonly IAlertService _alerts;
+    private readonly ILogger<AlertController> _logger;
 
-    public AlertController(IAlertService alerts) => _alerts = alerts;
+    public AlertController(IAlertService alerts, ILogger<AlertController> logger)
+    {
+        _alerts = alerts;
+        _logger = logger;
+    }
 
     // ---- QUERY ----
 
@@ -31,8 +36,19 @@ public sealed class AlertController : ControllerBase
         [FromQuery] int? take,
         CancellationToken ct)
     {
-        var list = await _alerts.GetAlertsAsync(isActive, alertType, color, multiCableId, from, to, skip, take, ct);
-        return Ok(list);
+        try
+        {
+            _logger.LogInformation("Getting alerts with filters - IsActive: {IsActive}, AlertType: {AlertType}, Color: {Color}, MultiCableId: {MultiCableId}", 
+                isActive, alertType, color, multiCableId);
+            var list = await _alerts.GetAlertsAsync(isActive, alertType, color, multiCableId, from, to, skip, take, ct);
+            _logger.LogInformation("Retrieved {Count} alerts", list.Count);
+            return Ok(list);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting alerts with filters");
+            throw;
+        }
     }
 
     /// <summary>AlertID'ye göre tek uyarıyı getirir.</summary>
@@ -41,8 +57,25 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] int alertId, CancellationToken ct)
     {
-        var dto = await _alerts.GetByIdAsync(alertId, ct);
-        return dto is null ? NotFound() : Ok(dto);
+        try
+        {
+            _logger.LogInformation("Getting alert with ID: {AlertId}", alertId);
+            var dto = await _alerts.GetByIdAsync(alertId, ct);
+            
+            if (dto is null)
+            {
+                _logger.LogWarning("Alert not found with ID: {AlertId}", alertId);
+                return NotFound();
+            }
+            
+            _logger.LogInformation("Retrieved alert with ID: {AlertId}", alertId);
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting alert with ID: {AlertId}", alertId);
+            throw;
+        }
     }
 
     /// <summary>Belirli bir renk için aktif uyarı var mı?</summary>
@@ -50,8 +83,18 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> HasActiveForColor([FromQuery][Required] string color, CancellationToken ct)
     {
-        var has = await _alerts.HasActiveAlertForColorAsync(color, ct);
-        return Ok(new { color, hasActive = has });
+        try
+        {
+            _logger.LogInformation("Checking if there's an active alert for color: {Color}", color);
+            var has = await _alerts.HasActiveAlertForColorAsync(color, ct);
+            _logger.LogInformation("Active alert for color {Color}: {HasActive}", color, has);
+            return Ok(new { color, hasActive = has });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking active alert for color: {Color}", color);
+            throw;
+        }
     }
 
     // ---- STATE CHANGES ----
@@ -63,8 +106,25 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Resolve([FromRoute] int alertId, [FromBody] ResolveRequest? body, CancellationToken ct)
     {
-        var ok = await _alerts.ResolveAsync(alertId, body?.Note, ct);
-        return ok ? NoContent() : NotFound();
+        try
+        {
+            _logger.LogInformation("Resolving alert with ID: {AlertId}", alertId);
+            var ok = await _alerts.ResolveAsync(alertId, body?.Note, ct);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to resolve alert with ID: {AlertId}", alertId);
+                return NotFound();
+            }
+            
+            _logger.LogInformation("Successfully resolved alert with ID: {AlertId}", alertId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resolving alert with ID: {AlertId}", alertId);
+            throw;
+        }
     }
 
     /// <summary>Uyarıyı yeniden aktif eder.</summary>
@@ -74,8 +134,25 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Reactivate([FromRoute] int alertId, [FromBody] ReactivateRequest? body, CancellationToken ct)
     {
-        var ok = await _alerts.ReactivateAsync(alertId, body?.Reason, ct);
-        return ok ? NoContent() : NotFound();
+        try
+        {
+            _logger.LogInformation("Reactivating alert with ID: {AlertId}", alertId);
+            var ok = await _alerts.ReactivateAsync(alertId, body?.Reason, ct);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to reactivate alert with ID: {AlertId}", alertId);
+                return NotFound();
+            }
+            
+            _logger.LogInformation("Successfully reactivated alert with ID: {AlertId}", alertId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reactivating alert with ID: {AlertId}", alertId);
+            throw;
+        }
     }
 
     // ---- EMAIL NOTIFICATIONS ----
@@ -87,10 +164,25 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> NotifyAdmins([FromRoute] int alertId, CancellationToken ct)
     {
-        var ok = await _alerts.NotifyAdminsForAlertAsync(alertId, ct);
-        return ok
-            ? Ok(new { message = "Adminlere e-posta gönderildi." })
-            : NotFound(new { message = "Alert bulunamadı veya admin e-postası yok." });
+        try
+        {
+            _logger.LogInformation("Sending admin notification for alert ID: {AlertId}", alertId);
+            var ok = await _alerts.NotifyAdminsForAlertAsync(alertId, ct);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to send admin notification for alert ID: {AlertId}", alertId);
+                return NotFound(new { message = "Alert bulunamadı veya admin e-postası yok." });
+            }
+            
+            _logger.LogInformation("Successfully sent admin notification for alert ID: {AlertId}", alertId);
+            return Ok(new { message = "Adminlere e-posta gönderildi." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending admin notification for alert ID: {AlertId}", alertId);
+            throw;
+        }
     }
 
     /// <summary>Renk bazlı kritik stok uyarısını adminlere e-posta olarak yollar.</summary>
@@ -100,11 +192,31 @@ public sealed class AlertController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> NotifyLowStock([FromBody] LowStockNotifyRequest body, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var ok = await _alerts.NotifyAdminsForLowStockAsync(body.Color, body.Qty, ct);
-        return ok
-            ? Ok(new { message = $"{body.Color} rengi için stok uyarısı gönderildi.", body.Qty })
-            : NotFound(new { message = "Admin e-postası bulunamadı." });
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for low stock notification request");
+                return ValidationProblem(ModelState);
+            }
+            
+            _logger.LogInformation("Sending low stock notification for color: {Color}, quantity: {Qty}", body.Color, body.Qty);
+            var ok = await _alerts.NotifyAdminsForLowStockAsync(body.Color, body.Qty, ct);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to send low stock notification for color: {Color}", body.Color);
+                return NotFound(new { message = "Admin e-postası bulunamadı." });
+            }
+            
+            _logger.LogInformation("Successfully sent low stock notification for color: {Color}", body.Color);
+            return Ok(new { message = $"{body.Color} rengi için stok uyarısı gönderildi.", body.Qty });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending low stock notification for color: {Color}", body.Color);
+            throw;
+        }
     }
 
     // ---- Request bodies ----

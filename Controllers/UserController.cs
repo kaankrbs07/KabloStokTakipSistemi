@@ -9,64 +9,157 @@ namespace KabloStokTakipSistemi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    public UsersController(IUserService userService) => _userService = userService;
+    private readonly ILogger<UsersController> _logger;
+    
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    {
+        _userService = userService;
+        _logger = logger;
+    }
 
     // GET: api/users
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GetUserDto>>> GetAll(CancellationToken ct)
     {
-        var users = await _userService.GetAllUsersAsync();
-        return Ok(users);
+        try
+        {
+            _logger.LogInformation("Getting all users");
+            var users = await _userService.GetAllUsersAsync();
+            _logger.LogInformation("Retrieved {Count} users", users.Count());
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all users");
+            throw;
+        }
     }
 
     // GET: api/users/id
     [HttpGet("{id:long}", Name = "GetUserById")]
     public async Task<ActionResult<GetUserDto>> GetById(long id, CancellationToken ct)
     {
-        var user = await _userService.GetUserByIdAsync(id);
-        return user is null ? NotFound(new { message = "Kullanıcı bulunamadı." }) : Ok(user);
+        try
+        {
+            _logger.LogInformation("Getting user with ID: {UserId}", id);
+            var user = await _userService.GetUserByIdAsync(id);
+            
+            if (user is null)
+            {
+                _logger.LogWarning("User not found with ID: {UserId}", id);
+                return NotFound(new { message = "Kullanıcı bulunamadı." });
+            }
+            
+            _logger.LogInformation("Retrieved user: {UserId}", id);
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user with ID: {UserId}", id);
+            throw;
+        }
     }
 
     // POST: api/users
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto, CancellationToken ct)
     {
-        var ok = await _userService.CreateUserAsync(dto);
-        if (!ok) return BadRequest(new { message = "Kullanıcı oluşturulamadı." });
+        try
+        {
+            _logger.LogInformation("Creating new user with ID: {UserId}", dto.UserID);
+            var ok = await _userService.CreateUserAsync(dto);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to create user with ID: {UserId}", dto.UserID);
+                return BadRequest(new { message = "Kullanıcı oluşturulamadı." });
+            }
 
-        // dto.UserID sizde dışarıdan geliyor (numeric(10,0)); CreatedAtAction ile Location header verelim
-        return CreatedAtRoute("GetUserById", new { id = dto.UserID }, new { message = "Kullanıcı oluşturuldu.", id = dto.UserID });
+            _logger.LogInformation("Successfully created user with ID: {UserId}", dto.UserID);
+            return CreatedAtRoute("GetUserById", new { id = dto.UserID }, new { message = "Kullanıcı oluşturuldu.", id = dto.UserID });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user with ID: {UserId}", dto.UserID);
+            throw;
+        }
     }
 
     // PUT: api/users/id
     [HttpPut("{id:long}")]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto, CancellationToken ct)
     {
-        // route -> dto eşlemesi
-        dto = dto with { UserID = id };
+        try
+        {
+            _logger.LogInformation("Updating user with ID: {UserId}", id);
+            // route -> dto eşlemesi
+            dto = dto with { UserID = id };
 
-        var ok = await _userService.UpdateUserAsync(dto);
-        if (!ok) return NotFound(new { message = "Güncelleme başarısız. Kullanıcı bulunamadı." });
+            var ok = await _userService.UpdateUserAsync(dto);
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to update user with ID: {UserId}", id);
+                return NotFound(new { message = "Güncelleme başarısız. Kullanıcı bulunamadı." });
+            }
 
-        return NoContent();
+            _logger.LogInformation("Successfully updated user with ID: {UserId}", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user with ID: {UserId}", id);
+            throw;
+        }
     }
 
     // DELETE: api/users/id  (soft-delete / pasif etme)
     [HttpDelete("{id:long}")]
     public async Task<IActionResult> Deactivate(long id, CancellationToken ct)
     {
-        var ok = await _userService.DeactivateUserAsync(id);
-        if (!ok) return NotFound(new { message = "Kullanıcı pasif hâle getirilemedi. Kullanıcı bulunamadı." });
+        try
+        {
+            _logger.LogInformation("Deactivating user with ID: {UserId}", id);
+            var ok = await _userService.DeactivateUserAsync(id);
+            
+            if (!ok)
+            {
+                _logger.LogWarning("Failed to deactivate user with ID: {UserId}", id);
+                return NotFound(new { message = "Kullanıcı pasif hâle getirilemedi. Kullanıcı bulunamadı." });
+            }
 
-        return Ok(new { message = "Kullanıcı pasif hâle getirildi." });
+            _logger.LogInformation("Successfully deactivated user with ID: {UserId}", id);
+            return Ok(new { message = "Kullanıcı pasif hâle getirildi." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating user with ID: {UserId}", id);
+            throw;
+        }
     }
 
     // GET: api/users/id/summary
     [HttpGet("{id:long}/summary")]
     public async Task<IActionResult> GetActivitySummary(long id, CancellationToken ct)
     {
-        var summary = await _userService.GetUserActivitySummaryAsync(id);
-        return summary is null ? NotFound(new { message = "Etkinlik özeti bulunamadı." }) : Ok(summary);
+        try
+        {
+            _logger.LogInformation("Getting activity summary for user ID: {UserId}", id);
+            var summary = await _userService.GetUserActivitySummaryAsync(id);
+            
+            if (summary is null)
+            {
+                _logger.LogWarning("Activity summary not found for user ID: {UserId}", id);
+                return NotFound(new { message = "Etkinlik özeti bulunamadı." });
+            }
+            
+            _logger.LogInformation("Retrieved activity summary for user ID: {UserId}", id);
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting activity summary for user ID: {UserId}", id);
+            throw;
+        }
     }
 }
 
