@@ -117,46 +117,25 @@ public class UserService : IUserService
         try
         {
             _logger.LogInformation("Updating user with ID: {UserId}", dto.UserID);
-            // Role veya Password geldiyse güvenlik alanlarını da güncelleyen SP'yi çalıştır.
-            if (!string.IsNullOrWhiteSpace(dto.Role) || !string.IsNullOrWhiteSpace(dto.Password))
-            {
-                _logger.LogInformation("Updating user with security fields (Role/Password) for user ID: {UserId}", dto.UserID);
-                var p = new[]
-                {
-                    new SqlParameter("@UserID", dto.UserID),
-                    new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
-                    new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
-                    new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
-                    new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
-                    new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
-                    new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value),
-                    new SqlParameter("@Role", (object?)dto.Role ?? DBNull.Value),
-                    new SqlParameter("@Password", (object?)dto.Password ?? DBNull.Value)
-                };
 
-                // Bu SP'yi senin tarafta oluştur: Role/Password null ise dokunmasın.
-                await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
-                    p);
-            }
-            else
+            var p = new[]
             {
-                _logger.LogInformation("Updating user without security fields for user ID: {UserId}", dto.UserID);
-                var p = new[]
-                {
-                    new SqlParameter("@UserID", dto.UserID),
-                    new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
-                    new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
-                    new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
-                    new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
-                    new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
-                    new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value)
-                };
+                new SqlParameter("@UserID", dto.UserID),
+                new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
+                new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
+                new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
+                new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
+                new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
+                new SqlParameter("@IsActive", (object?)dto.IsActive ?? DBNull.Value),
 
-                await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @Role, @IsActive, @Password",
-                    p);
-            }
+                // Security alanları: boş/whitespace ise NULL gönder.
+                new SqlParameter("@Role", string.IsNullOrWhiteSpace(dto.Role) ? (object)DBNull.Value : dto.Role),
+                new SqlParameter("@Password", string.IsNullOrWhiteSpace(dto.Password) ? (object)DBNull.Value : dto.Password)
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
+                p);
 
             _logger.LogInformation("Successfully updated user with ID: {UserId}", dto.UserID);
             return true;
@@ -167,6 +146,7 @@ public class UserService : IUserService
             return false;
         }
     }
+
 
     public async Task<bool> DeactivateUserAsync(long userId)
     {

@@ -1,4 +1,4 @@
-﻿
+﻿using KabloStokTakipSistemi.Data;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.DTOs;
@@ -11,11 +11,11 @@ namespace KabloStokTakipSistemi.Services.Implementations
 {
     public sealed class LogService : ILogService
     {
-        private readonly DbContext _db;              // AppDbContext / kendi DbContext adın
+        private readonly AppDbContext _db;             
         private readonly IMapper _mapper;
 
-        // Not: ctor'da gerçek DbContext tipini enjekte ediyorsun (örn. ApplicationDbContext)
-        public LogService(DbContext db, IMapper mapper)
+        
+        public LogService(AppDbContext db, IMapper mapper)
         {
             _db = db;
             _mapper = mapper;
@@ -100,8 +100,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
             return list;
         }
-
-        // İsteğe bağlı: manuel stok düzenleme logu (SP üzerinden)
+        
         public async Task<bool> LogManualStockEditAsync(ManualStockEditLogDto dto, CancellationToken ct = default)
         {
             // SP: dbo.sp_LogManualStockEdit @CableID, @TableName, @OldQuantity, @NewQuantity, @EditedByUserID, @Reason

@@ -62,7 +62,7 @@ public sealed class EmailService : IEmailService
         try
         {
             // Sertifika doğrulaması özel ortamlarda sorun çıkarırsa kontrollü esnetme:
-            // client.ServerCertificateValidationCallback = (s, c, h, e) => true; // PROD'da önerilmez!
+            // client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
             var secure = _opt.UseStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
 
@@ -81,7 +81,7 @@ public sealed class EmailService : IEmailService
         catch (Exception ex)
         {
             _log.LogError(ex, "E-posta gönderilemedi: {Subject} -> {To}", subject, to);
-            throw; // İstersen özel bir uygulama hatasına wrap edebilirsin.
+            throw; 
         }
     }
 

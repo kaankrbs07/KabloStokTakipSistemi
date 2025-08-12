@@ -110,8 +110,7 @@ public sealed class DepartmentService : IDepartmentService
             };
 
             _db.Departments.Add(entity);
-
-            // INSERT tetikleyicisi (trg_Log_InsertDepartment) log'u DB tarafında yazacak.
+            
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Successfully created department with ID: {DepartmentId}", entity.DepartmentID);
             return entity.DepartmentID;
@@ -141,8 +140,7 @@ public sealed class DepartmentService : IDepartmentService
                 _logger.LogWarning("Department update failed - DepartmentName is empty for ID: {DepartmentId}", departmentId);
                 throw new ArgumentException("DepartmentName boş olamaz.");
             }
-
-            // (Opsiyonel) Aynı isim kontrolü — kendisi hariç
+            
             var nameClash = await _db.Departments
                 .AnyAsync(d => d.DepartmentID != departmentId && d.DepartmentName == dto.DepartmentName, ct);
             if (nameClash)
@@ -153,8 +151,7 @@ public sealed class DepartmentService : IDepartmentService
 
             entity.DepartmentName = dto.DepartmentName.Trim();
             entity.AdminID = dto.AdminID;
-
-            // Not: UPDATE için ayrıca trigger yok; Log gerekiyorsa DB tarafına eklenebilir.
+            
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Successfully updated department with ID: {DepartmentId}", departmentId);
             return true;
