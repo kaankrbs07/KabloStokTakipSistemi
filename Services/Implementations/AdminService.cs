@@ -77,7 +77,7 @@ public class AdminService : IAdminService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Hata loglama eklenebilir
             return false;

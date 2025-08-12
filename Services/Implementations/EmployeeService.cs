@@ -16,7 +16,7 @@ public class EmployeeService : IEmployeeService
     {
         var list = await _context.Employees
             .Include(e => e.User)
-            .ThenInclude(u => u.Department)
+            .ThenInclude(u => u!.Department)
             .AsNoTracking()
             .ToListAsync();
 
@@ -32,7 +32,7 @@ public class EmployeeService : IEmployeeService
     {
         var e = await _context.Employees
             .Include(x => x.User)
-            .ThenInclude(u => u.Department)
+           .ThenInclude(u => u!.Department)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.EmployeeID == employeeId);
 

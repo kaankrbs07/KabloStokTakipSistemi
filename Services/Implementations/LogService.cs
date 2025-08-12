@@ -42,7 +42,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 q = q.Where(x => x.Operation == filter.Operation);
 
             if (!string.IsNullOrWhiteSpace(filter.Search))
-                q = q.Where(x => x.Description.Contains(filter.Search!));
+                q = q.Where(x => x.Description != null && x.Description.Contains(filter.Search!));
 
             q = filter.Desc ? q.OrderByDescending(x => x.LogDate).ThenByDescending(x => x.LogID)
                             : q.OrderBy(x => x.LogDate).ThenBy(x => x.LogID);
@@ -80,7 +80,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
             if (to.HasValue)   q = q.Where(x => x.LogDate <= to.Value);
 
             var list = await q.GroupBy(x => x.Operation)
-                              .Select(g => new LogStatDto(g.Key, g.Count()))
+                .Select(g => new LogStatDto(g.Key ?? string.Empty, g.Count()))
                               .OrderByDescending(x => x.Count)
                               .ToListAsync(ct);
 
@@ -94,7 +94,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
             if (to.HasValue)   q = q.Where(x => x.LogDate <= to.Value);
 
             var list = await q.GroupBy(x => x.TableName)
-                              .Select(g => new LogStatDto(g.Key, g.Count()))
+                .Select(g => new LogStatDto(g.Key ?? string.Empty, g.Count()))
                               .OrderByDescending(x => x.Count)
                               .ToListAsync(ct);
 

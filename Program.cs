@@ -7,7 +7,8 @@ using AutoMapper;
 using KabloStokTakipSistemi.Services.Implementations;
 using KabloStokTakipSistemi.Services.Interfaces;
 
-var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+NLog.LogManager.Setup().LoadConfigurationFromAppSettings();
+var logger = NLog.LogManager.GetCurrentClassLogger();
 
 try
 {
@@ -17,6 +18,18 @@ try
     builder.Logging.ClearProviders();
     builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
     builder.Host.UseNLog();
+
+    // CORS Configuration for Frontend Integration
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowFrontend", policy =>
+        {
+            policy.WithOrigins("http://localhost:3000", "http://localhost:4200", "http://localhost:8080")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+    });
 
     // DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -45,7 +58,7 @@ try
 
     var app = builder.Build();
 
-    // 🌐 Swagger
+    // Swagger
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -56,6 +69,9 @@ try
     app.UseMiddleware<GlobalExceptionMiddleware>();
 
     app.UseHttpsRedirection();
+
+    // CORS middleware - must be before Authentication/Authorization
+    app.UseCors("AllowFrontend");
 
     app.UseAuthentication();  // JWT varsa gerekli
     app.UseAuthorization();

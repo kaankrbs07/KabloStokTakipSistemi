@@ -141,3 +141,13 @@ C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debu
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.pdb
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.genruntimeconfig.cache
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\ref\KabloStokTakipSistemi.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\MailKit.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\MimeKit.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\System.Formats.Asn1.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\KabloStokTakipSistemi.staticwebassets.endpoints.json
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\staticwebassets\msbuild.KabloStokTakipSistemi.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
