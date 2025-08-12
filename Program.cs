@@ -3,7 +3,6 @@ using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.Services; // Servis sınıflarını tanımak için
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
-using AutoMapper;
 using KabloStokTakipSistemi.Services.Implementations;
 using KabloStokTakipSistemi.Services.Interfaces;
 
