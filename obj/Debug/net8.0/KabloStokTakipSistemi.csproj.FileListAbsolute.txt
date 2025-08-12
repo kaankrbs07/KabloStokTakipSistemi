@@ -152,3 +152,4 @@ C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debu
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\staticwebassets\msbuild.KabloStokTakipSistemi.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\Microsoft.Extensions.Options.dll

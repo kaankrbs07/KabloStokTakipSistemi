@@ -9,13 +9,22 @@ using MimeKit;
 namespace KabloStokTakipSistemi.Services.Implementations
 {
     /// <summary>
-    /// MailKit tabanlı e-posta gönderim servisi.
-    /// SMTP ayarlarını appsettings.json -> "Smtp" bölümünden alır.
+    /// MailKit tabanlı e-posta servisi.
+    /// appsettings.json -> "Smtp" bölümünden ayarları alır.
+    /// TLS modu port ve UseStartTls'a göre otomatik seçilir:
+    ///   - 465 => SslOnConnect
+    ///   - 587 + UseStartTls=true => StartTls
+    ///   - Diğerleri => Auto
     /// </summary>
     public sealed class EmailService : IEmailService
     {
         private readonly SmtpOptions _opt;
         private readonly ILogger<EmailService> _log;
+
+        // Basit retry ayarları (opsiyonlarız yoksa burada sabitleyelim)
+        private const int DefaultTimeoutMs = 10000;   // SmtpClient.Timeout
+        private const int MaxRetries       = 2;       // toplam deneme: 1 + MaxRetries
+        private const int RetryDelayMs     = 1500;
 
         public EmailService(IOptions<SmtpOptions> options, ILogger<EmailService> log)
         {
@@ -23,9 +32,6 @@ namespace KabloStokTakipSistemi.Services.Implementations
             _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
-        /// <summary>
-        /// E-posta gönderir (HTML + düz metin, cc/bcc ve ekler destekli).
-        /// </summary>
         public async Task SendAsync(
             string to,
             string subject,
@@ -36,36 +42,37 @@ namespace KabloStokTakipSistemi.Services.Implementations
             IEnumerable<(string FileName, byte[] Content)>? attachments = null,
             CancellationToken ct = default)
         {
-            // ---------- 1) Mesajı oluştur ----------
-            if (string.IsNullOrWhiteSpace(to))
-                throw new ArgumentException("Alıcı e-posta adresi boş olamaz.", nameof(to));
+            if (string.IsNullOrWhiteSpace(_opt.Host))
+                throw new InvalidOperationException("SMTP Host yapılandırılmamış.");
+            if (_opt.Port <= 0)
+                throw new InvalidOperationException("SMTP Port geçersiz.");
+            if (string.IsNullOrWhiteSpace(_opt.SenderEmail))
+                throw new InvalidOperationException("Gönderen e-posta (SenderEmail) yapılandırılmamış.");
 
+            // 1) MIME mesajını kur
             var message = new MimeMessage();
 
-            // Gönderen
-            message.From.Add(new MailboxAddress(_opt.SenderName ?? string.Empty, _opt.SenderEmail ?? string.Empty));
-
-            // Alıcılar
+            message.From.Add(new MailboxAddress(_opt.SenderName ?? string.Empty, _opt.SenderEmail));
             if (!TryAddMailbox(message.To, to))
                 throw new ArgumentException($"Geçersiz alıcı e-posta adresi: {to}", nameof(to));
 
-            if (cc is not null)
-                foreach (var c in cc) TryAddMailbox(message.Cc, c);
+            if (cc != null)
+                foreach (var c in cc)
+                    TryAddMailbox(message.Cc, c);
 
-            if (bcc is not null)
-                foreach (var b in bcc) TryAddMailbox(message.Bcc, b);
+            if (bcc != null)
+                foreach (var b in bcc)
+                    TryAddMailbox(message.Bcc, b);
 
             message.Subject = subject ?? string.Empty;
 
             var builder = new BodyBuilder
             {
                 HtmlBody = htmlBody ?? string.Empty,
-                TextBody = string.IsNullOrWhiteSpace(textBody)
-                    ? HtmlToText(htmlBody ?? string.Empty)
-                    : textBody
+                TextBody = string.IsNullOrWhiteSpace(textBody) ? HtmlToText(htmlBody ?? string.Empty) : textBody
             };
 
-            if (attachments is not null)
+            if (attachments != null)
             {
                 foreach (var (fileName, content) in attachments)
                 {
@@ -76,70 +83,61 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
             message.Body = builder.ToMessageBody();
 
-            // ---------- 2) SMTP bağlantısı ----------
-            using var client = new SmtpClient
+            // 2) SMTP gönderimi (basit retry ile)
+            var attempt = 0;
+            Exception? lastError = null;
+
+            while (attempt <= MaxRetries)
             {
-                Timeout = 10000 // ms -> bekleme kilitlenmesin
-            };
+                attempt++;
+                using var client = new SmtpClient { Timeout = DefaultTimeoutMs };
 
-            // Test/geliştirme ortamında sertifika doğrulamasını kapat (prod'da kapat!)
-            if (_opt.IgnoreCertificateErrors)
-            {
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-            }
-
-            try
-            {
-                // Secure mode seçimi
-                var secure = ResolveSecureOption(_opt.UseSsl, _opt.UseStartTls, _opt.Port);
-
-                await client.ConnectAsync(_opt.Host, _opt.Port, secure, ct);
-
-                // XOAUTH2'yi kapat (parola ile giriş yapacaksak)
-                if (!_opt.UseOAuth2)
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-                // Kimlik doğrulama
-                if (!string.IsNullOrWhiteSpace(_opt.Username))
+                try
                 {
-                    await client.AuthenticateAsync(_opt.Username, _opt.Password, ct);
+                    var secure = ChooseSecureSocketOption(_opt.Port, _opt.UseStartTls);
+
+                    await client.ConnectAsync(_opt.Host, _opt.Port, secure, ct);
+
+                    if (!string.IsNullOrWhiteSpace(_opt.Username))
+                        await client.AuthenticateAsync(_opt.Username, _opt.Password, ct);
+
+                    await client.SendAsync(message, ct);
+                    await client.DisconnectAsync(true, ct);
+
+                    _log.LogInformation("E-posta gönderildi. To={To}; Subject={Subject}; Attempt={Attempt}",
+                        to, subject, attempt);
+                    return;
                 }
+                catch (OperationCanceledException)
+                {
+                    _log.LogWarning("E-posta gönderimi iptal edildi. To={To}; Subject={Subject}; Attempt={Attempt}",
+                        to, subject, attempt);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    _log.LogWarning(ex, "E-posta gönderim denemesi başarısız. To={To}; Subject={Subject}; Attempt={Attempt}",
+                        to, subject, attempt);
 
-                // Gönder
-                await client.SendAsync(message, ct);
+                    if (attempt > MaxRetries)
+                        break;
 
-                // Kapat
-                await client.DisconnectAsync(true, ct);
+                    try { await Task.Delay(RetryDelayMs, ct); } catch { /* ignore */ }
+                }
+            }
 
-                _log.LogInformation("E-posta gönderildi. To={To}; Subject={Subject}", to, subject);
-            }
-            catch (OperationCanceledException)
-            {
-                _log.LogWarning("E-posta gönderimi iptal edildi. To={To}; Subject={Subject}", to, subject);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _log.LogError(ex, "E-posta gönderilemedi. To={To}; Subject={Subject}", to, subject);
-                throw;
-            }
+            _log.LogError(lastError, "E-posta gönderilemedi. To={To}; Subject={Subject}", to, subject);
+            throw lastError ?? new Exception("E-posta gönderimi başarısız.");
         }
 
-        // --------- Helpers ---------
+        // ----------------- Helpers -----------------
 
-        private static SecureSocketOptions ResolveSecureOption(bool useSsl, bool useStartTls, int port)
+        private static SecureSocketOptions ChooseSecureSocketOption(int port, bool useStartTls)
         {
-            // Tipik kullanım:
-            // - 465  -> SSL/TLS (implicit)
-            // - 587  -> STARTTLS
-            if (useSsl) return SecureSocketOptions.SslOnConnect;
-            if (useStartTls) return SecureSocketOptions.StartTls;
-
-            // Port'a göre makul varsayılan
-            if (port == 465) return SecureSocketOptions.SslOnConnect;
-            if (port == 587) return SecureSocketOptions.StartTls;
-
-            return SecureSocketOptions.Auto;
+            if (port == 465) return SecureSocketOptions.SslOnConnect;          // Gmail/SSL
+            if (port == 587 && useStartTls) return SecureSocketOptions.StartTls; // STARTTLS
+            return SecureSocketOptions.Auto;                                     // diğerleri
         }
 
         private static bool TryAddMailbox(InternetAddressList list, string? address)
@@ -163,5 +161,6 @@ namespace KabloStokTakipSistemi.Services.Implementations
         }
     }
 }
+
 
 

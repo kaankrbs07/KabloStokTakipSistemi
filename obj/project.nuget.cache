@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "3qxlpzItZdw=",
+  "dgSpecHash": "cWvhj+vLgcQ=",
   "success": true,
   "projectFilePath": "C:\\Users\\Enes\\RiderProjects\\KabloStokTakipSistemi\\KabloStokTakipSistemi\\KabloStokTakipSistemi.csproj",
   "expectedPackageFiles": [
@@ -35,7 +35,7 @@
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.dependencymodel\\8.0.0\\microsoft.extensions.dependencymodel.8.0.0.nupkg.sha512",
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.logging\\8.0.0\\microsoft.extensions.logging.8.0.0.nupkg.sha512",
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
-    "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.options\\8.0.0\\microsoft.extensions.options.8.0.0.nupkg.sha512",
+    "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.options\\8.0.1\\microsoft.extensions.options.8.0.1.nupkg.sha512",
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.identity.client\\4.47.2\\microsoft.identity.client.4.47.2.nupkg.sha512",
     "C:\\Users\\Enes\\.nuget\\packages\\microsoft.identity.client.extensions.msal\\2.19.3\\microsoft.identity.client.extensions.msal.2.19.3.nupkg.sha512",
