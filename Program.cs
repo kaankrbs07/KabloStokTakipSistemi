@@ -1,6 +1,5 @@
 using KabloStokTakipSistemi.Middlewares;
 using KabloStokTakipSistemi.Data;
-using KabloStokTakipSistemi.Services; // Servis sınıflarını tanımak için
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using KabloStokTakipSistemi.Services.Implementations;
