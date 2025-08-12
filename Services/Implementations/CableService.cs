@@ -15,14 +15,13 @@ namespace KabloStokTakipSistemi.Services.Implementations
         // ===================== SINGLE =====================
         public async Task<IEnumerable<GetSingleCableDto>> GetAllSingleCablesAsync()
         {
-            // DTO 4 alanlıysa (CableID, Color, IsActive, MultiCableID/CreatedAt) ona göre doldur.
             return await _db.SingleCables
                 .AsNoTracking()
                 .Select(s => new GetSingleCableDto(
                     s.CableID,
                     s.Color,
                     s.IsActive,
-                    s.MultiCableID // <- DTO'nuz CreatedAt ise: s.CreatedAt yazın
+                    s.MultiCableID 
                 ))
                 .ToListAsync();
         }
@@ -36,18 +35,17 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 s.CableID,
                 s.Color,
                 s.IsActive,
-                s.MultiCableID // <- DTO 4. alanı farklıysa burayı değiştirin
+                s.MultiCableID 
             );
         }
 
         public async Task<bool> CreateSingleCableAsync(CreateSingleCableDto dto)
         {
-            // Single için create SP yok; EF ile ekliyoruz.
             var entity = new SingleCable
             {
                 Color = dto.Color,
                 IsActive = dto.IsActive,
-                MultiCableID = dto.MultiCableID // yoksa çıkarın
+                MultiCableID = dto.MultiCableID 
             };
 
             _db.SingleCables.Add(entity);
@@ -67,7 +65,6 @@ namespace KabloStokTakipSistemi.Services.Implementations
         public async Task<IEnumerable<GetSingleCableDto>> GetInactiveSingleCablesAsync()
         {
             // SP: dbo.sp_GetInactiveSingleCables
-            // Keyless DTO yapılandırmanız yoksa: modelBuilder.Entity<GetSingleCableDto>().HasNoKey();
             return await _db.Set<GetSingleCableDto>()
                 .FromSqlRaw("EXEC dbo.sp_GetInactiveSingleCables")
                 .AsNoTracking()
@@ -81,7 +78,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 .AsNoTracking()
                 .Select(m => new GetMultiCableDto(
                     m.MultiCableID,
-                    m.CableName,   // Modelde isim CableName
+                    m.CableName,   
                     m.Quantity,
                     m.IsActive
                 ))
@@ -103,7 +100,6 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
         public async Task<bool> CreateMultiCableAsync(CreateMultiCableDto dto)
         {
-            // Multi için create SP yok; EF ile ekliyoruz.
             var entity = new MultiCable
             {
                 CableName = dto.CableName,
@@ -134,7 +130,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 .ToListAsync();
         }
 
-        // ============== MULTI CONTENT (SP TABANLI) ==============
+        // ============== MULTI CONTENT ==============
         public async Task<IEnumerable<GetMultiCableContentDto>> GetMultiCableContentsAsync(int multiCableId)
         {
             // SP: dbo.sp_GetMultiCableContentDetails @MultiCableID
@@ -169,9 +165,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
         public async Task<int> GetStockStatusByColorAsync(string color)
         {
             // SP: dbo.sp_GetStockStatusByColor @Color  -> Toplam/uygun sütunu döndürüyor varsayımıyla ilk kolonu int okuyoruz.
-            // DTO’n varsa ona map edebilirim; şimdilik tek değer bekleniyorsa böyle:
             var p = new[] { new SqlParameter("@Color", color) };
-            // Basit yol: keyless dto yerine scalar okuma
             var rows = await _db.Set<TempColorStatusRow>()
                 .FromSqlRaw("EXEC dbo.sp_GetStockStatusByColor @Color", p)
                 .AsNoTracking()
@@ -182,7 +176,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
         private sealed class TempColorStatusRow
         {
-            public int Total { get; set; } // SP dönen ilk kolon buysa çalışır; değilse DTO'yu bildir, düzenleyeyim.
+            public int Total { get; set; }
         }
     }
 }

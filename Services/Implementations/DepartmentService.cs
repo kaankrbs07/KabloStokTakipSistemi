@@ -54,8 +54,7 @@ public sealed class DepartmentService : IDepartmentService
         // Temel doğrulama (DB’de NULL olsa bile uygulama seviyesinde boş bırakmıyoruz)
         if (string.IsNullOrWhiteSpace(dto.DepartmentName))
             throw new ArgumentException("DepartmentName boş olamaz.");
-
-        // (Opsiyonel) Aynı isimden kaçın
+        
         var exists = await _db.Departments.AnyAsync(d => d.DepartmentName == dto.DepartmentName, ct);
         if (exists) throw new InvalidOperationException("Bu departman adı zaten mevcut.");
 
@@ -63,7 +62,6 @@ public sealed class DepartmentService : IDepartmentService
         {
             DepartmentName = dto.DepartmentName.Trim(),
             AdminID = dto.AdminID,
-            // CreatedAt’i DB default’u dolduruyorsa set etmeye gerek yok; yine de emniyet:
             CreatedAt = DateTime.Now
         };
 
