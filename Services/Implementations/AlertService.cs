@@ -15,8 +15,6 @@ public sealed class AlertService : IAlertService
     private readonly IMapper _mapper;
     private readonly IEmailService _email;
     private readonly ILogger<AlertService> _log;
-
-    // Projendeki gerçek rol adını kullan: "Admin" / "Yönetici"
     private const string AdminRole = "Admin";
 
     public AlertService(AppDbContext db, IMapper mapper, IEmailService email, ILogger<AlertService> log)
