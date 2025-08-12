@@ -73,7 +73,7 @@ public class StockMovementsController : ControllerBase
         }
     }
 
-    // Single için color=... kullan; Multi için cableName=... kullan.
+    // Single için color, Multi için cableNamE
     [HttpGet("history/filter")]
     public async Task<ActionResult<IEnumerable<GetStockMovementDto>>> GetHistoryFiltered(
         [FromQuery] string? tableName,
