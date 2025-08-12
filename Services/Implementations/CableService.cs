@@ -10,47 +10,91 @@ namespace KabloStokTakipSistemi.Services.Implementations
     public class CableService : ICableService
     {
         private readonly AppDbContext _db;
-        public CableService(AppDbContext db) => _db = db;
+        private readonly ILogger<CableService> _logger;
+        
+        public CableService(AppDbContext db, ILogger<CableService> logger)
+        {
+            _db = db;
+            _logger = logger;
+        }
 
         // ===================== SINGLE =====================
         public async Task<IEnumerable<GetSingleCableDto>> GetAllSingleCablesAsync()
         {
-            return await _db.SingleCables
-                .AsNoTracking()
-                .Select(s => new GetSingleCableDto(
-                    s.CableID,
-                    s.Color,
-                    s.IsActive,
-                    s.MultiCableID 
-                ))
-                .ToListAsync();
+            try
+            {
+                _logger.LogInformation("Getting all single cables from database");
+                var result = await _db.SingleCables
+                    .AsNoTracking()
+                    .Select(s => new GetSingleCableDto(
+                        s.CableID,
+                        s.Color,
+                        s.IsActive,
+                        s.MultiCableID 
+                    ))
+                    .ToListAsync();
+                
+                _logger.LogInformation("Retrieved {Count} single cables from database", result.Count);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all single cables from database");
+                throw;
+            }
         }
 
         public async Task<GetSingleCableDto?> GetSingleCableByIdAsync(int cableId)
         {
-            var s = await _db.SingleCables.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.CableID == cableId);
+            try
+            {
+                _logger.LogInformation("Getting single cable by ID: {CableId}", cableId);
+                var s = await _db.SingleCables.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.CableID == cableId);
 
-            return s is null ? null : new GetSingleCableDto(
-                s.CableID,
-                s.Color,
-                s.IsActive,
-                s.MultiCableID 
-            );
+                if (s is null)
+                {
+                    _logger.LogWarning("Single cable not found with ID: {CableId}", cableId);
+                    return null;
+                }
+
+                _logger.LogInformation("Retrieved single cable with ID: {CableId}", cableId);
+                return new GetSingleCableDto(
+                    s.CableID,
+                    s.Color,
+                    s.IsActive,
+                    s.MultiCableID 
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting single cable by ID: {CableId}", cableId);
+                throw;
+            }
         }
 
         public async Task<bool> CreateSingleCableAsync(CreateSingleCableDto dto)
         {
-            var entity = new SingleCable
+            try
             {
-                Color = dto.Color,
-                IsActive = dto.IsActive,
-                MultiCableID = dto.MultiCableID 
-            };
+                _logger.LogInformation("Creating single cable with Color: {Color}, MultiCableID: {MultiCableId}", dto.Color, dto.MultiCableID);
+                var entity = new SingleCable
+                {
+                    Color = dto.Color,
+                    IsActive = dto.IsActive,
+                    MultiCableID = dto.MultiCableID 
+                };
 
-            _db.SingleCables.Add(entity);
-            await _db.SaveChangesAsync();
-            return true;
+                _db.SingleCables.Add(entity);
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("Successfully created single cable with Color: {Color}", dto.Color);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating single cable with Color: {Color}", dto.Color);
+                throw;
+            }
         }
 
         public async Task<bool> DeactivateSingleCableAsync(int cableId)

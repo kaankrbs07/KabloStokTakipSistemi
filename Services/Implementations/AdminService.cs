@@ -11,46 +11,77 @@ namespace KabloStokTakipSistemi.Services.Implementations;
 public class AdminService : IAdminService
 {
     private readonly AppDbContext _context;
-    public AdminService(AppDbContext context) => _context = context;
+    private readonly ILogger<AdminService> _logger;
+    
+    public AdminService(AppDbContext context, ILogger<AdminService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
 
     public async Task<IEnumerable<GetAdminDto>> GetAllAdminsAsync()
     {
-        var admins = await _context.Admins
-            .Include(a => a.User)
-            .AsNoTracking()
-            .ToListAsync();
+        try
+        {
+            _logger.LogInformation("Getting all admins from database");
+            var admins = await _context.Admins
+                .Include(a => a.User)
+                .AsNoTracking()
+                .ToListAsync();
 
-        return admins.Select(a => new GetAdminDto(
-            a.AdminID,
-            a.Username,
-            a.DepartmentName,           // Admins tablosu
-            a.User?.FirstName,          // Users tablosu
-            a.User?.LastName            // Users tablosu
-        ));
+            _logger.LogInformation("Retrieved {Count} admins from database", admins.Count);
+            return admins.Select(a => new GetAdminDto(
+                a.AdminID,
+                a.Username,
+                a.DepartmentName,           // Admins tablosu
+                a.User?.FirstName,          // Users tablosu
+                a.User?.LastName            // Users tablosu
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all admins from database");
+            throw;
+        }
     }
 
     public async Task<GetAdminDto?> GetAdminByIdAsync(long adminId)
     {
-        var a = await _context.Admins
-            .Include(x => x.User)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.AdminID == adminId);
+        try
+        {
+            _logger.LogInformation("Getting admin by ID: {AdminId}", adminId);
+            var a = await _context.Admins
+                .Include(x => x.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.AdminID == adminId);
 
-        return a is null
-            ? null
-            : new GetAdminDto(
+            if (a is null)
+            {
+                _logger.LogWarning("Admin not found with ID: {AdminId}", adminId);
+                return null;
+            }
+
+            _logger.LogInformation("Retrieved admin with ID: {AdminId}", adminId);
+            return new GetAdminDto(
                 a.AdminID,
                 a.Username,
                 a.DepartmentName,
                 a.User?.FirstName,
                 a.User?.LastName
             );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting admin by ID: {AdminId}", adminId);
+            throw;
+        }
     }
 
     public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
     {
         try
         {
+            _logger.LogInformation("Creating admin with UserID: {UserId}, Username: {Username}", userDto.UserID, adminDto.Username);
             var parameters = new[]
             {
                 new SqlParameter("@UserID", userDto.UserID),
@@ -75,11 +106,12 @@ public class AdminService : IAdminService
                 parameters
             );
 
+            _logger.LogInformation("Successfully created admin with UserID: {UserId}", userDto.UserID);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Hata loglama eklenebilir
+            _logger.LogError(ex, "Error creating admin with UserID: {UserId}", userDto.UserID);
             return false;
         }
     }
@@ -87,13 +119,37 @@ public class AdminService : IAdminService
 
     public async Task<bool> UpdateAdminDepartmentAsync(long adminId, string newDepartmentName)
     {
-        var admin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == adminId);
-        if (admin is null) return false;
+        try
+        {
+            _logger.LogInformation("Updating department for admin ID: {AdminId} to: {DepartmentName}", adminId, newDepartmentName);
+            var admin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == adminId);
+            
+            if (admin is null)
+            {
+                _logger.LogWarning("Admin not found with ID: {AdminId}", adminId);
+                return false;
+            }
 
-        admin.DepartmentName = newDepartmentName;
-        _context.Admins.Update(admin);
+            admin.DepartmentName = newDepartmentName;
+            _context.Admins.Update(admin);
 
-        return await _context.SaveChangesAsync() > 0;
+            var result = await _context.SaveChangesAsync() > 0;
+            if (result)
+            {
+                _logger.LogInformation("Successfully updated department for admin ID: {AdminId}", adminId);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to save changes for admin ID: {AdminId}", adminId);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating department for admin ID: {AdminId}", adminId);
+            throw;
+        }
     }
 }
 

@@ -10,40 +10,70 @@ namespace KabloStokTakipSistemi.Services.Implementations;
 public class EmployeeService : IEmployeeService
 {
     private readonly AppDbContext _context;
-    public EmployeeService(AppDbContext context) => _context = context;
+    private readonly ILogger<EmployeeService> _logger;
+    
+    public EmployeeService(AppDbContext context, ILogger<EmployeeService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
 
     public async Task<IEnumerable<GetEmployeeDto>> GetAllEmployeesAsync()
     {
-        var list = await _context.Employees
-            .Include(e => e.User)
-            .ThenInclude(u => u!.Department)
-            .AsNoTracking()
-            .ToListAsync();
+        try
+        {
+            _logger.LogInformation("Getting all employees from database");
+            var list = await _context.Employees
+                .Include(e => e.User)
+                .ThenInclude(u => u!.Department)
+                .AsNoTracking()
+                .ToListAsync();
 
-        return list.Select(e => new GetEmployeeDto(
-            e.EmployeeID,
-            e.User?.FirstName,
-            e.User?.LastName,
-            e.User?.Department?.DepartmentName
-        ));
+            _logger.LogInformation("Retrieved {Count} employees from database", list.Count);
+            return list.Select(e => new GetEmployeeDto(
+                e.EmployeeID,
+                e.User?.FirstName,
+                e.User?.LastName,
+                e.User?.Department?.DepartmentName
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all employees from database");
+            throw;
+        }
     }
 
     public async Task<GetEmployeeDto?> GetEmployeeByIdAsync(long employeeId)
     {
-        var e = await _context.Employees
-            .Include(x => x.User)
-           .ThenInclude(u => u!.Department)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EmployeeID == employeeId);
+        try
+        {
+            _logger.LogInformation("Getting employee by ID: {EmployeeId}", employeeId);
+            var e = await _context.Employees
+                .Include(x => x.User)
+               .ThenInclude(u => u!.Department)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.EmployeeID == employeeId);
 
-        if (e is null) return null;
+            if (e is null)
+            {
+                _logger.LogWarning("Employee not found with ID: {EmployeeId}", employeeId);
+                return null;
+            }
 
-        return new GetEmployeeDto(
-            e.EmployeeID,
-            e.User?.FirstName,
-            e.User?.LastName,
-            e.User?.Department?.DepartmentName
-        );
+            _logger.LogInformation("Retrieved employee with ID: {EmployeeId}", employeeId);
+            return new GetEmployeeDto(
+                e.EmployeeID,
+                e.User?.FirstName,
+                e.User?.LastName,
+                e.User?.Department?.DepartmentName
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting employee by ID: {EmployeeId}", employeeId);
+            throw;
+        }
     }
 
     // Not: sp_CreateUser, Role='Employee' geldiğinde Employees tablosuna da INSERT etmeli.
@@ -52,6 +82,7 @@ public class EmployeeService : IEmployeeService
         await using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
+            _logger.LogInformation("Creating employee with ID: {EmployeeId}, UserID: {UserId}", dto.EmployeeID, dto.UserID);
             var p = new[]
             {
                 new SqlParameter("@UserID", dto.UserID),
@@ -76,44 +107,60 @@ public class EmployeeService : IEmployeeService
             );
 
             await tx.CommitAsync();
+            _logger.LogInformation("Successfully created employee with ID: {EmployeeId}", dto.EmployeeID);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
             await tx.RollbackAsync();
+            _logger.LogError(ex, "Error creating employee with ID: {EmployeeId}", dto.EmployeeID);
             return false;
         }
     }
 
-    // Department’ı Users tablosunda değiştiriyoruz (Employee->User join)
+    // Department'ı Users tablosunda değiştiriyoruz (Employee->User join)
     public async Task<bool> UpdateEmployeeDepartmentAsync(long employeeId, int newDepartmentId)
     {
-        var emp = await _context.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
-
-        if (emp is null) return false;
-
-        // sp_UpdateUsers: NULL gelen alanlara dokunmaz (öyle tasarladık)
-        var p = new[]
+        try
         {
-            new SqlParameter("@UserID", emp.UserID),
-            new SqlParameter("@FirstName", DBNull.Value),
-            new SqlParameter("@LastName", DBNull.Value),
-            new SqlParameter("@Email", DBNull.Value),
-            new SqlParameter("@PhoneNumber", DBNull.Value),
-            new SqlParameter("@DepartmentID", newDepartmentId),
-            new SqlParameter("@IsActive", DBNull.Value),
-            new SqlParameter("@Role", DBNull.Value),
-            new SqlParameter("@Password", DBNull.Value)
-        };
+            _logger.LogInformation("Updating department for employee ID: {EmployeeId} to department ID: {DepartmentId}", employeeId, newDepartmentId);
+            var emp = await _context.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
 
-        await _context.Database.ExecuteSqlRawAsync(
-            "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, " +
-            "@DepartmentID, @IsActive, @Role, @Password",
-            p
-        );
+            if (emp is null)
+            {
+                _logger.LogWarning("Employee not found with ID: {EmployeeId}", employeeId);
+                return false;
+            }
 
-        return true;
+            // sp_UpdateUsers: NULL gelen alanlara dokunmaz (öyle tasarladık)
+            var p = new[]
+            {
+                new SqlParameter("@UserID", emp.UserID),
+                new SqlParameter("@FirstName", DBNull.Value),
+                new SqlParameter("@LastName", DBNull.Value),
+                new SqlParameter("@Email", DBNull.Value),
+                new SqlParameter("@PhoneNumber", DBNull.Value),
+                new SqlParameter("@DepartmentID", newDepartmentId),
+                new SqlParameter("@IsActive", DBNull.Value),
+                new SqlParameter("@Role", DBNull.Value),
+                new SqlParameter("@Password", DBNull.Value)
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, " +
+                "@DepartmentID, @IsActive, @Role, @Password",
+                p
+            );
+
+            _logger.LogInformation("Successfully updated department for employee ID: {EmployeeId}", employeeId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating department for employee ID: {EmployeeId}", employeeId);
+            throw;
+        }
     }
 }
