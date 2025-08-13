@@ -13,10 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 // -------------------------------------------------------
 var configuration = builder.Configuration;
 
-// -------------------------------------------------------
-// Services (DI)
-// -------------------------------------------------------
-
 // DbContext (MSSQL)
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
@@ -31,16 +27,15 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Controller + JSON
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
-    {
-        // İstersen enum/string tercihleri, camelCase vs. burada ayarlanır
-        // o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    { 
+        
     });
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS (gerekirse aç/kapat)
+// CORS 
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("AllowAll", policy =>
@@ -64,7 +59,6 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 
-// (Opsiyonel) Auth – JWT gelecekte eklenecekse burada konumlanır
 // builder.Services.AddAuthentication(options => { ... })
 //     .AddJwtBearer(options => { ... });
 // builder.Services.AddAuthorization();
@@ -91,7 +85,7 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
 
-// (JWT kullanıyorsan uncomment et)
+// jwt gelince
 // app.UseAuthentication();
 app.UseAuthorization();
 

@@ -21,7 +21,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
         private readonly SmtpOptions _opt;
         private readonly ILogger<EmailService> _log;
 
-        // Basit retry ayarları (opsiyonlarız yoksa burada sabitleyelim)
+        // Basit retry ayarları
         private const int DefaultTimeoutMs = 10000; // SmtpClient.Timeout
         private const int MaxRetries = 2; // toplam deneme: 1 + MaxRetries
         private const int RetryDelayMs = 1500;
@@ -49,7 +49,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
             if (string.IsNullOrWhiteSpace(_opt.SenderEmail))
                 throw new InvalidOperationException("Gönderen e-posta (SenderEmail) yapılandırılmamış.");
 
-            // 1) MIME mesajını kur
+            // MIME mesajını kur
             var message = new MimeMessage();
 
             message.From.Add(new MailboxAddress(_opt.SenderName ?? string.Empty, _opt.SenderEmail));
@@ -83,7 +83,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
             message.Body = builder.ToMessageBody();
 
-            // 2) SMTP gönderimi (basit retry ile)
+            //  SMTP gönderimi (basit retry ile)
             var attempt = 0;
             Exception? lastError = null;
 

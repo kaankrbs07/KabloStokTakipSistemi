@@ -22,7 +22,7 @@ public sealed class TestMailController : ControllerBase
     [HttpGet("send-test")]
     public async Task<IActionResult> SendTest()
     {
-        await _email.SendAsync("kadirtokagoz6@gmail.com", "Test Mail", "<b>Merhaba, TEST MAİL</b>");
+        await _email.SendAsync("enes_200434@hotmail.com", "Test Mail", "<b>Merhaba, TEST MAİL</b>");
         return Ok(new { message = "Test mail gönderildi." });
     }
 }

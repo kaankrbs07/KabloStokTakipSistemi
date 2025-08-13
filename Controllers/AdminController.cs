@@ -17,7 +17,7 @@ public class AdminController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Tüm adminleri listeler</summary>
+    /// Tüm adminleri listeler
     [HttpGet]
     public async Task<IActionResult> GetAllAdmins()
     {
@@ -35,7 +35,7 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Belirli bir admini getirir</summary>
+    /// Belirli bir admini getirir
     [HttpGet("{adminId:long}")]
     public async Task<IActionResult> GetAdminById(long adminId)
     {
@@ -60,7 +60,7 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Yeni admin oluşturur (Users + Admins)</summary>
+    /// Yeni admin oluşturur
     [HttpPost]
     public async Task<IActionResult> CreateAdmin([FromBody] (CreateUserDto user, CreateAdminDto admin) dto)
     {
@@ -85,7 +85,7 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Admin'in DepartmentName alanını günceller</summary>
+    /// Admin'in DepartmentName alanını günceller
     [HttpPut("{adminId:long}/department")]
     public async Task<IActionResult> UpdateDepartment(long adminId, [FromQuery] string newDepartmentName)
     {

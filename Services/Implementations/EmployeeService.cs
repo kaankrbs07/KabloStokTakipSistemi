@@ -172,7 +172,7 @@ public class EmployeeService : IEmployeeService
         }
         catch (Exception ex)
         {
-            // 2) İstisna fırlatmak yerine logla ve false dön (tutarlı bool sözleşmesi).
+            // 2) İstisna fırlatmak yerine logla ve false dön 
             _logger.LogError(ex, "Error updating department for employee ID: {EmployeeId}", employeeId);
             return false;
         }

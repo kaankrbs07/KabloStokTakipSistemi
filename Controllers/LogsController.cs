@@ -21,9 +21,8 @@ public class LogsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
+
     /// Filtreye göre log listesini döner (sayfalama destekli).
-    /// </summary>
     [HttpPost("filter")]
     public async Task<IActionResult> GetLogs([FromBody] LogFilterDto filter, CancellationToken ct)
     {
@@ -40,9 +39,8 @@ public class LogsController : ControllerBase
         }
     }
 
-    /// <summary>
+
     /// En son log kayıtlarını döner.
-    /// </summary>
     [HttpGet("latest")]
     public async Task<IActionResult> GetLatest([FromQuery] int take = 50, CancellationToken ct = default)
     {
@@ -59,9 +57,8 @@ public class LogsController : ControllerBase
         }
     }
 
-    /// <summary>
+
     /// Operasyon türüne göre log sayıları.
-    /// </summary>
     [HttpGet("stats/operations")]
     public async Task<IActionResult> GetCountByOperation([FromQuery] DateTime? from, [FromQuery] DateTime? to,
         CancellationToken ct = default)
@@ -79,9 +76,8 @@ public class LogsController : ControllerBase
         }
     }
 
-    /// <summary>
+
     /// Tablo adına göre log sayıları.
-    /// </summary>
     [HttpGet("stats/tables")]
     public async Task<IActionResult> GetCountByTable([FromQuery] DateTime? from, [FromQuery] DateTime? to,
         CancellationToken ct = default)
@@ -98,10 +94,8 @@ public class LogsController : ControllerBase
             return StatusCode(500, "Tablo bazlı log istatistikleri getirilirken hata oluştu.");
         }
     }
-
-    /// <summary>
+    
     /// Manuel stok düzeltme işlemini loglar.
-    /// </summary>
     [HttpPost("manual-stock-edit")]
     public async Task<IActionResult> LogManualStockEdit([FromBody] ManualStockEditLogDto dto,
         CancellationToken ct = default)

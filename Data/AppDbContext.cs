@@ -22,7 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<Log> Logs => Set<Log>();
 
-    // Eşik tabloları (PK değişiklikleri dikkate alındı)
+    // Eşik tabloları 
     public DbSet<ColorThreshold> ColorThresholds => Set<ColorThreshold>(); // PK = Color
     public DbSet<CableThreshold> CableThresholds => Set<CableThreshold>(); // PK = MultiCableID
 
