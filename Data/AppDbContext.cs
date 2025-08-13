@@ -188,7 +188,7 @@ public class AppDbContext : DbContext
             e.ToTable("Logs");
             e.HasKey(x => x.LogID);
             e.Property(x => x.TableName).HasMaxLength(50);
-            e.Property(x => x.Operation).HasMaxLength(10).IsRequired(); // INSERT/UPDATE/DELETE/PROCEDURE
+            e.Property(x => x.Operation).HasMaxLength(10).IsRequired(); 
             e.Property(x => x.Description).HasMaxLength(255).IsRequired();
             e.Property(x => x.LogDate).HasDefaultValueSql("GETDATE()").IsRequired();
             e.Property(x => x.UserID).IsRequired();
