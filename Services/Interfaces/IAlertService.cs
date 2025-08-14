@@ -1,12 +1,10 @@
-﻿// Services/Interfaces/IAlertService.cs
-
-using KabloStokTakipSistemi.DTOs;
+﻿using KabloStokTakipSistemi.DTOs;
 
 namespace KabloStokTakipSistemi.Services.Interfaces;
 
 public interface IAlertService
 {
-    // Listeleme + filtreler (tamamı opsiyonel)
+    // --- Listeleme ---
     Task<IReadOnlyList<GetAlertDto>> GetAlertsAsync(
         bool? isActive = null,
         string? alertType = null,
@@ -20,14 +18,34 @@ public interface IAlertService
 
     Task<GetAlertDto?> GetByIdAsync(int alertId, CancellationToken ct = default);
 
-    // Durum değişiklikleri
+    // --- Durum değişiklikleri ---
     Task<bool> ResolveAsync(int alertId, string? resolveNote = null, CancellationToken ct = default);
     Task<bool> ReactivateAsync(int alertId, string? reason = null, CancellationToken ct = default);
 
-    // DB fonksiyonu: belirli renkte aktif uyarı var mı?
+    // --- Aktiflik kontrolü ---
     Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default);
+    Task<bool> HasActiveAlertForMultiAsync(int multiCableId, CancellationToken ct = default);
 
-    // --- E-posta bildirimleri (Controller'ın kullandıkları) ---
+    // --- E-posta bildirimleri (mevcut) ---
     Task<bool> NotifyAdminsForAlertAsync(int alertId, CancellationToken ct = default);
     Task<bool> NotifyAdminsForLowStockAsync(string color, int qty, CancellationToken ct = default);
+
+    // --- OTOMATİK TETİK GİRİŞ NOKTALARI ---
+    Task<ThresholdEvaluationResult> EvaluateSingleThresholdAsync(
+        string color, int currentQty, int minThreshold, CancellationToken ct = default);
+
+    Task<ThresholdEvaluationResult> EvaluateMultiThresholdAsync(
+        int multiCableId, int currentQty, int minThreshold, CancellationToken ct = default);
 }
+
+// DTO: servis döndürsün 
+public sealed record ThresholdEvaluationResult(
+    bool AlertCreatedAndNotified, // yeni alert açıldı + mail gitti
+    bool AlertResolved, // aktif alert kapatıldı
+    bool WasAlreadyActive, // zaten aktif alert vardı
+    int RecipientCount, // e-posta alan admin sayısı
+    int CurrentQty,
+    int MinThreshold,
+    string Kind, // "Single" | "Multi"
+    string Key // Single: Color, Multi: MultiCableId string'i
+);

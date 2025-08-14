@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KabloStokTakipSistemi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7b4af205009b7b6c74730837d5d269807d3e4e56")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+078d9a5edef2754b4d9cb63902d8dab01b151941")]
 [assembly: System.Reflection.AssemblyProductAttribute("KabloStokTakipSistemi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KabloStokTakipSistemi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
