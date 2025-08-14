@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Controllers/MailController.cs
+using System.ComponentModel.DataAnnotations;
+using KabloStokTakipSistemi.Middlewares; // ErrorBody, AppErrors
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,12 +13,10 @@ namespace KabloStokTakipSistemi.Controllers;
 public sealed class MailController : ControllerBase
 {
     private readonly IAlertService _alerts;
-    private readonly ILogger<MailController> _logger;
 
-    public MailController(IAlertService alerts, ILogger<MailController> logger)
+    public MailController(IAlertService alerts)
     {
         _alerts = alerts;
-        _logger = logger;
     }
 
     // ========== MODELS ==========
@@ -36,50 +36,21 @@ public sealed class MailController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> NotifyAdminsForAlert([FromRoute] int alertId, CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation("NotifyAdminsForAlert invoked for AlertID={AlertId}", alertId);
-            var sent = await _alerts.NotifyAdminsForAlertAsync(alertId, ct); // BCC kullanır
-            if (!sent)
-            {
-                _logger.LogWarning("NotifyAdminsForAlert failed (Alert not found or no admin emails). AlertID={AlertId}", alertId);
-                return NotFound(new { message = "Alert bulunamadı veya gönderilecek admin e-postası yok." });
-            }
-
-            return Ok(new { message = "Yöneticilere e-posta gönderildi." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "NotifyAdminsForAlert error. AlertID={AlertId}", alertId);
-            throw; // GlobalExceptionMiddleware yakalar
-        }
+        var sent = await _alerts.NotifyAdminsForAlertAsync(alertId, ct);
+        return sent ? Ok() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 
     /// <summary>
-    /// Kullanıcının belirlediği minimum seviyenin altına düşen stok için (renk-bazlı) adminlere e-posta gönderir.
-    /// Trigger/SP sonrasında veya batch kontrolünde çağrılabilir.
+    /// Renk-bazlı kritik stok için adminlere e-posta gönderir.
+    /// Admin e-postası bulunamazsa 404 döner.
     /// </summary>
     [HttpPost("low-stock")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> NotifyAdminsForLowStock([FromBody] LowStockNotifyRequest req, CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation("NotifyAdminsForLowStock invoked for Color={Color}, Qty={Qty}", req.Color, req.Qty);
-            var sent = await _alerts.NotifyAdminsForLowStockAsync(req.Color, req.Qty, ct); // BCC kullanır
-            if (!sent)
-            {
-                _logger.LogWarning("NotifyAdminsForLowStock failed (no admin emails). Color={Color}, Qty={Qty}", req.Color, req.Qty);
-                return NotFound(new { message = "Gönderilecek admin e-postası bulunamadı." });
-            }
-
-            return Ok(new { message = "Yöneticilere kritik stok uyarısı gönderildi." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "NotifyAdminsForLowStock error. Color={Color}, Qty={Qty}", req.Color, req.Qty);
-            throw; // GlobalExceptionMiddleware yakalar
-        }
+        // ModelState invalid ise [ApiController] otomatik 400 (KSTS-0400) döner.
+        var sent = await _alerts.NotifyAdminsForLowStockAsync(req.Color, req.Qty, ct);
+        return sent ? Ok() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 }
