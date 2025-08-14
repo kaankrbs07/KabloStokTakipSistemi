@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿// Services/EmailService.cs
+using System.Text.RegularExpressions;
 using KabloStokTakipSistemi.Configuration;
 using KabloStokTakipSistemi.Services.Interfaces;
 using MailKit.Net.Smtp;
@@ -9,21 +10,15 @@ using MimeKit;
 namespace KabloStokTakipSistemi.Services.Implementations
 {
     /// <summary>
-    /// MailKit tabanlı e-posta servisi.
-    /// appsettings.json -> "Smtp" bölümünden ayarları alır.
-    /// TLS modu port ve UseStartTls'a göre otomatik seçilir:
-    ///   - 465 => SslOnConnect
-    ///   - 587 + UseStartTls=true => StartTls
-    ///   - Diğerleri => Auto
+    /// MailKit tabanlı e-posta servisi. (Warn/Error log politikası)
     /// </summary>
     public sealed class EmailService : IEmailService
     {
         private readonly SmtpOptions _opt;
         private readonly ILogger<EmailService> _log;
 
-        // Basit retry ayarları
-        private const int DefaultTimeoutMs = 10000; // SmtpClient.Timeout
-        private const int MaxRetries = 2; // toplam deneme: 1 + MaxRetries
+        private const int DefaultTimeoutMs = 10000;
+        private const int MaxRetries = 2;
         private const int RetryDelayMs = 1500;
 
         public EmailService(IOptions<SmtpOptions> options, ILogger<EmailService> log)
@@ -49,20 +44,14 @@ namespace KabloStokTakipSistemi.Services.Implementations
             if (string.IsNullOrWhiteSpace(_opt.SenderEmail))
                 throw new InvalidOperationException("Gönderen e-posta (SenderEmail) yapılandırılmamış.");
 
-            // MIME mesajını kur
             var message = new MimeMessage();
-
             message.From.Add(new MailboxAddress(_opt.SenderName ?? string.Empty, _opt.SenderEmail));
+
             if (!TryAddMailbox(message.To, to))
                 throw new ArgumentException($"Geçersiz alıcı e-posta adresi: {to}", nameof(to));
 
-            if (cc != null)
-                foreach (var c in cc)
-                    TryAddMailbox(message.Cc, c);
-
-            if (bcc != null)
-                foreach (var b in bcc)
-                    TryAddMailbox(message.Bcc, b);
+            if (cc != null) foreach (var c in cc) TryAddMailbox(message.Cc, c);
+            if (bcc != null) foreach (var b in bcc) TryAddMailbox(message.Bcc, b);
 
             message.Subject = subject ?? string.Empty;
 
@@ -83,7 +72,6 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
             message.Body = builder.ToMessageBody();
 
-            //  SMTP gönderimi (basit retry ile)
             var attempt = 0;
             Exception? lastError = null;
 
@@ -104,8 +92,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                     await client.SendAsync(message, ct);
                     await client.DisconnectAsync(true, ct);
 
-                    _log.LogInformation("E-posta gönderildi. To={To}; Subject={Subject}; Attempt={Attempt}",
-                        to, subject, attempt);
+                    // Başarılı akışta log yazmıyoruz (Warn/Error politikası)
                     return;
                 }
                 catch (OperationCanceledException)
@@ -121,17 +108,9 @@ namespace KabloStokTakipSistemi.Services.Implementations
                         "E-posta gönderim denemesi başarısız. To={To}; Subject={Subject}; Attempt={Attempt}",
                         to, subject, attempt);
 
-                    if (attempt > MaxRetries)
-                        break;
+                    if (attempt > MaxRetries) break;
 
-                    try
-                    {
-                        await Task.Delay(RetryDelayMs, ct);
-                    }
-                    catch
-                    {
-                        /* ignore */
-                    }
+                    try { await Task.Delay(RetryDelayMs, ct); } catch { /* ignore */ }
                 }
             }
 
@@ -139,27 +118,20 @@ namespace KabloStokTakipSistemi.Services.Implementations
             throw lastError ?? new Exception("E-posta gönderimi başarısız.");
         }
 
-        // ----------------- Helpers -----------------
+        // -------- Helpers --------
 
         private static SecureSocketOptions ChooseSecureSocketOption(int port, bool useStartTls)
         {
-            if (port == 465) return SecureSocketOptions.SslOnConnect; // Gmail/SSL
-            if (port == 587 && useStartTls) return SecureSocketOptions.StartTls; // STARTTLS
-            return SecureSocketOptions.Auto; // diğerleri
+            if (port == 465) return SecureSocketOptions.SslOnConnect;
+            if (port == 587 && useStartTls) return SecureSocketOptions.StartTls;
+            return SecureSocketOptions.Auto;
         }
 
         private static bool TryAddMailbox(InternetAddressList list, string? address)
         {
             if (string.IsNullOrWhiteSpace(address)) return false;
-            try
-            {
-                list.Add(MailboxAddress.Parse(address));
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            try { list.Add(MailboxAddress.Parse(address)); return true; }
+            catch { return false; }
         }
 
         private static string HtmlToText(string html)

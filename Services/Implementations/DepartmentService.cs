@@ -1,5 +1,4 @@
 ﻿// Services/DepartmentService.cs
-
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.Data;
@@ -7,6 +6,7 @@ using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using KabloStokTakipSistemi.Middlewares; // AppException/AppErrors
 
 namespace KabloStokTakipSistemi.Services.Implementations;
 
@@ -14,214 +14,110 @@ public sealed class DepartmentService : IDepartmentService
 {
     private readonly AppDbContext _db;
     private readonly IMapper _mapper;
-    private readonly ILogger<DepartmentService> _logger;
 
-    public DepartmentService(AppDbContext db, IMapper mapper, ILogger<DepartmentService> logger)
+    // ILogger enjekte edilebilir ama kullanmıyoruz (DI imzasını bozmayalım)
+    public DepartmentService(AppDbContext db, IMapper mapper, ILogger<DepartmentService> _)
     {
         _db = db;
         _mapper = mapper;
-        _logger = logger;
     }
 
     public async Task<GetDepartmentDto?> GetByIdAsync(int departmentId, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Getting department by ID: {DepartmentId}", departmentId);
-            var result = await _db.Departments.AsNoTracking()
-                .Where(d => d.DepartmentID == departmentId)
-                .ProjectTo<GetDepartmentDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(ct);
-
-            if (result == null)
-            {
-                _logger.LogWarning("Department not found with ID: {DepartmentId}", departmentId);
-                return null;
-            }
-
-            _logger.LogInformation("Retrieved department with ID: {DepartmentId}", departmentId);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting department by ID: {DepartmentId}", departmentId);
-            throw;
-        }
+        return await _db.Departments.AsNoTracking()
+            .Where(d => d.DepartmentID == departmentId)
+            .ProjectTo<GetDepartmentDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<IReadOnlyList<GetDepartmentDto>> GetAsync(
         int? adminId = null,
         string? search = null,
-        bool? isActive = null, // aktif/pasif filtresi
+        bool? isActive = null,
         int skip = 0,
         int take = 100,
         CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation(
-                "Getting departments with filters - AdminId: {AdminId}, Search: {Search}, IsActive: {IsActive}, Skip: {Skip}, Take: {Take}",
-                adminId, search, isActive, skip, take);
+        IQueryable<Department> q = _db.Departments.AsNoTracking();
 
-            IQueryable<Department> q = _db.Departments.AsNoTracking();
+        if (adminId is not null)
+            q = q.Where(d => d.AdminID == adminId);
 
-            if (adminId is not null)
-                q = q.Where(d => d.AdminID == adminId);
+        if (!string.IsNullOrWhiteSpace(search))
+            q = q.Where(d => d.DepartmentName != null && d.DepartmentName.Contains(search));
 
-            if (!string.IsNullOrWhiteSpace(search))
-                q = q.Where(d => d.DepartmentName != null && d.DepartmentName.Contains(search));
+        if (isActive is not null)
+            q = q.Where(d => d.IsActive == isActive);
 
-            if (isActive is not null)
-                q = q.Where(d => d.IsActive == isActive);
+        q = q.OrderBy(d => d.DepartmentName)
+             .ThenBy(d => d.DepartmentID)
+             .Skip(skip).Take(take);
 
-            q = q.OrderBy(d => d.DepartmentName)
-                .ThenBy(d => d.DepartmentID)
-                .Skip(skip).Take(take);
-
-            var result = await q.ProjectTo<GetDepartmentDto>(_mapper.ConfigurationProvider).ToListAsync(ct);
-            _logger.LogInformation("Retrieved {Count} departments", result.Count);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting departments with filters");
-            throw;
-        }
+        return await q.ProjectTo<GetDepartmentDto>(_mapper.ConfigurationProvider).ToListAsync(ct);
     }
-
 
     public async Task<int> CreateAsync(CreateDepartmentDto dto, CancellationToken ct = default)
     {
-        try
+        if (string.IsNullOrWhiteSpace(dto.DepartmentName))
+            throw new AppException(AppErrors.Validation.BadRequest, "DepartmentName boş olamaz.");
+
+        var name = dto.DepartmentName.Trim();
+
+        var exists = await _db.Departments.AnyAsync(d => d.DepartmentName == name, ct);
+        if (exists)
+            throw new AppException(AppErrors.Common.Conflict, "Bu departman adı zaten mevcut.");
+
+        var entity = new Department
         {
-            _logger.LogInformation("Creating department with name: {DepartmentName}, AdminId: {AdminId}",
-                dto.DepartmentName, dto.AdminID);
+            DepartmentName = name,
+            AdminID = dto.AdminID,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
+        };
 
-            // Temel doğrulama (DB'de NULL olsa bile uygulama seviyesinde boş bırakmıyoruz)
-            if (string.IsNullOrWhiteSpace(dto.DepartmentName))
-            {
-                _logger.LogWarning("Department creation failed - DepartmentName is empty");
-                throw new ArgumentException("DepartmentName boş olamaz.");
-            }
-
-            var exists = await _db.Departments.AnyAsync(d => d.DepartmentName == dto.DepartmentName, ct);
-            if (exists)
-            {
-                _logger.LogWarning("Department creation failed - Department name already exists: {DepartmentName}",
-                    dto.DepartmentName);
-                throw new InvalidOperationException("Bu departman adı zaten mevcut.");
-            }
-
-            var entity = new Department
-            {
-                DepartmentName = dto.DepartmentName.Trim(),
-                AdminID = dto.AdminID,
-                CreatedAt = DateTime.Now
-            };
-
-            _db.Departments.Add(entity);
-
-            await _db.SaveChangesAsync(ct);
-            _logger.LogInformation("Successfully created department with ID: {DepartmentId}", entity.DepartmentID);
-            return entity.DepartmentID;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating department with name: {DepartmentName}", dto.DepartmentName);
-            throw;
-        }
+        _db.Departments.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return entity.DepartmentID;
     }
 
     public async Task<bool> UpdateAsync(int departmentId, UpdateDepartmentDto dto, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Updating department with ID: {DepartmentId}, Name: {DepartmentName}", departmentId,
-                dto.DepartmentName);
+        var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
+        if (entity is null) return false;
 
-            var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
-            if (entity is null)
-            {
-                _logger.LogWarning("Department not found with ID: {DepartmentId}", departmentId);
-                return false;
-            }
+        if (string.IsNullOrWhiteSpace(dto.DepartmentName))
+            throw new AppException(AppErrors.Validation.BadRequest, "DepartmentName boş olamaz.");
 
-            if (string.IsNullOrWhiteSpace(dto.DepartmentName))
-            {
-                _logger.LogWarning("Department update failed - DepartmentName is empty for ID: {DepartmentId}",
-                    departmentId);
-                throw new ArgumentException("DepartmentName boş olamaz.");
-            }
+        var name = dto.DepartmentName.Trim();
 
-            var nameClash = await _db.Departments
-                .AnyAsync(d => d.DepartmentID != departmentId && d.DepartmentName == dto.DepartmentName, ct);
-            if (nameClash)
-            {
-                _logger.LogWarning("Department update failed - Department name already exists: {DepartmentName}",
-                    dto.DepartmentName);
-                throw new InvalidOperationException("Bu departman adı zaten mevcut.");
-            }
+        var clash = await _db.Departments
+            .AnyAsync(d => d.DepartmentID != departmentId && d.DepartmentName == name, ct);
+        if (clash)
+            throw new AppException(AppErrors.Common.Conflict, "Bu departman adı zaten mevcut.");
 
-            entity.DepartmentName = dto.DepartmentName.Trim();
-            entity.AdminID = dto.AdminID;
+        entity.DepartmentName = name;
+        entity.AdminID = dto.AdminID;
 
-            await _db.SaveChangesAsync(ct);
-            _logger.LogInformation("Successfully updated department with ID: {DepartmentId}", departmentId);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating department with ID: {DepartmentId}", departmentId);
-            throw;
-        }
+        await _db.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task<bool> DeactivateAsync(int departmentId, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Deactivating department with ID: {DepartmentId}", departmentId);
+        var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
+        if (entity is null) return false;
 
-            var entity = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentID == departmentId, ct);
-            if (entity is null)
-            {
-                _logger.LogWarning("Department not found for deactivation with ID: {DepartmentId}", departmentId);
-                return false;
-            }
-
-            entity.IsActive = false;
-            await _db.SaveChangesAsync(ct);
-
-            _logger.LogInformation("Successfully deactivated department with ID: {DepartmentId}", departmentId);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deactivating department with ID: {DepartmentId}", departmentId);
-            throw;
-        }
+        entity.IsActive = false;
+        await _db.SaveChangesAsync(ct);
+        return true;
     }
-
 
     public async Task<bool> ExistsByNameAsync(string departmentName, CancellationToken ct = default)
     {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(departmentName))
-            {
-                _logger.LogWarning("Checking department existence with empty name");
-                return false;
-            }
+        if (string.IsNullOrWhiteSpace(departmentName))
+            throw new AppException(AppErrors.Validation.BadRequest, "DepartmentName boş olamaz.");
 
-            _logger.LogInformation("Checking if department exists with name: {DepartmentName}", departmentName);
-            var exists = await _db.Departments.AsNoTracking().AnyAsync(d => d.DepartmentName == departmentName, ct);
-            _logger.LogInformation("Department exists with name {DepartmentName}: {Exists}", departmentName, exists);
-            return exists;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking department existence with name: {DepartmentName}", departmentName);
-            throw;
-        }
+        var name = departmentName.Trim();
+        return await _db.Departments.AsNoTracking().AnyAsync(d => d.DepartmentName == name, ct);
     }
 }
