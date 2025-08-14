@@ -49,7 +49,7 @@ public class DepartmentController : ControllerBase
     }
 
     // Departman güncelle
-    [HttpPut("{id:int}")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> UpdateDepartment(int id, [FromBody] UpdateDepartmentDto dto)
     {
         var success = await _departmentService.UpdateAsync(id, dto);
@@ -57,7 +57,7 @@ public class DepartmentController : ControllerBase
     }
 
     // Departmanı pasif hale getir
-    [HttpDelete("{id:int}")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> DeactivateDepartment(int id)
     {
         var success = await _departmentService.DeactivateAsync(id); // Silme yerine pasifleştirme yapacak

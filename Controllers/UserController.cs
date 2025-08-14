@@ -87,7 +87,7 @@ public class UsersController : ControllerBase
     }
 
     // PUT: api/users/id
-    [HttpPut("{id:long}")]
+    [HttpPatch("{id:long}/status")]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto, CancellationToken ct)
     {
         try
@@ -113,8 +113,8 @@ public class UsersController : ControllerBase
         }
     }
 
-    // DELETE: api/users/id  (soft-delete / pasif etme)
-    [HttpDelete("{id:long}")]
+    // PATCH: api/users/id  (soft-delete / pasif etme)
+    [HttpPatch("{id:long}")]
     public async Task<IActionResult> Deactivate(long id, CancellationToken ct)
     {
         try

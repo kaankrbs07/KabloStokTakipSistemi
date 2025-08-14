@@ -87,7 +87,7 @@ public class EmployeeController : ControllerBase
     }
 
     // PUT: api/employee/id/department
-    [HttpPut("{id:long}/department")]
+    [HttpPatch("{id:long}/department")]
     public async Task<IActionResult> UpdateDepartment(long id, [FromBody] int departmentId, CancellationToken ct)
     {
         try
