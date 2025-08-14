@@ -57,7 +57,7 @@ public class DepartmentController : ControllerBase
     }
 
     // Departmanı pasif hale getir
-    [HttpPatch("{id:int}")]
+    [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> DeactivateDepartment(int id)
     {
         var success = await _departmentService.DeactivateAsync(id); // Silme yerine pasifleştirme yapacak

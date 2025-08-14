@@ -1,4 +1,6 @@
-﻿using KabloStokTakipSistemi.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+using KabloStokTakipSistemi.DTOs;
+using KabloStokTakipSistemi.Middlewares;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,72 +10,35 @@ namespace KabloStokTakipSistemi.Controllers;
 [Route("api/[controller]")]
 public class StockMovementsController : ControllerBase
 {
-    private static readonly HashSet<string> AllowedTables = new(StringComparer.OrdinalIgnoreCase) { "Single", "Multi" };
+    private static readonly HashSet<string> AllowedTables =
+        new(StringComparer.OrdinalIgnoreCase) { "Single", "Multi" };
 
-    private static readonly HashSet<string> AllowedMovements = new(StringComparer.OrdinalIgnoreCase)
-        { "Giriş", "Çıkış" };
+    private static readonly HashSet<string> AllowedMovements =
+        new(StringComparer.OrdinalIgnoreCase) { "Giriş", "Çıkış" };
 
     private readonly IStockMovementService _service;
-    private readonly ILogger<StockMovementsController> _logger;
-
-    public StockMovementsController(IStockMovementService service, ILogger<StockMovementsController> logger)
-    {
-        _service = service;
-        _logger = logger;
-    }
+    public StockMovementsController(IStockMovementService service) => _service = service;
 
     // POST api/stockmovements
     [HttpPost]
     public async Task<IActionResult> Insert([FromBody] CreateStockMovementDto dto, CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation(
-                "Creating stock movement - TableName: {TableName}, MovementType: {MovementType}, Quantity: {Quantity}",
-                dto.TableName, dto.MovementType, dto.Quantity);
+        if (!AllowedTables.Contains(dto.TableName) || !AllowedMovements.Contains(dto.MovementType))
+            return BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
 
-            if (!AllowedTables.Contains(dto.TableName))
-            {
-                _logger.LogWarning("Invalid TableName provided: {TableName}", dto.TableName);
-                return BadRequest("TableName sadece 'Single' veya 'Multi' olabilir.");
-            }
-
-            if (!AllowedMovements.Contains(dto.MovementType))
-            {
-                _logger.LogWarning("Invalid MovementType provided: {MovementType}", dto.MovementType);
-                return BadRequest("MovementType sadece 'Giriş' veya 'Çıkış' olabilir.");
-            }
-
-            await _service.InsertAsync(dto);
-            _logger.LogInformation("Successfully created stock movement");
-            return Created(string.Empty, new { message = "Stok hareketi eklendi." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating stock movement");
-            throw;
-        }
+        await _service.InsertAsync(dto);
+        return Ok(); // temsil döndürmüyoruz; 200 yeterli (hata olursa middleware loglar)
     }
 
     // GET api/stockmovements/history
     [HttpGet("history")]
     public async Task<ActionResult<IEnumerable<GetStockMovementDto>>> GetHistory(CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation("Getting stock movement history");
-            var data = await _service.GetHistoryAsync();
-            _logger.LogInformation("Retrieved {Count} stock movements", data.Count());
-            return Ok(data);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting stock movement history");
-            throw;
-        }
+        var data = await _service.GetHistoryAsync();
+        return Ok(data);
     }
 
-    // Single için color, Multi için cableNamE
+    // GET api/stockmovements/history/filter
     [HttpGet("history/filter")]
     public async Task<ActionResult<IEnumerable<GetStockMovementDto>>> GetHistoryFiltered(
         [FromQuery] string? tableName,
@@ -84,27 +49,11 @@ public class StockMovementsController : ControllerBase
         [FromQuery] DateTime? dateTo,
         CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation(
-                "Getting filtered stock movement history - TableName: {TableName}, CableName: {CableName}, Color: {Color}, UserId: {UserId}",
-                tableName, cableName, color, userId);
+        if (tableName is not null && !AllowedTables.Contains(tableName))
+            return BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
 
-            if (tableName is not null && !AllowedTables.Contains(tableName))
-            {
-                _logger.LogWarning("Invalid TableName provided in filter: {TableName}", tableName);
-                return BadRequest("TableName sadece 'Single' veya 'Multi' olabilir.");
-            }
-
-            var filter = new StockMovementFilterDto(tableName, cableName, color, userId, dateFrom, dateTo);
-            var data = await _service.GetHistoryFilteredAsync(filter);
-            _logger.LogInformation("Retrieved {Count} filtered stock movements", data.Count());
-            return Ok(data);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting filtered stock movement history");
-            throw;
-        }
+        var filter = new StockMovementFilterDto(tableName, cableName, color, userId, dateFrom, dateTo);
+        var data = await _service.GetHistoryFilteredAsync(filter);
+        return Ok(data);
     }
 }
