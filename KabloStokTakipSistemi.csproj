@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- EnableDefaultContentItems = true (varsayılan) kalsın; nlog.config zaten Content olarak eklenir -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +23,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
     <PackageReference Include="MimeKit" Version="4.12.0" />
 
-    <!-- NLog (minimum hata loglama için) -->
+    <!-- NLog -->
     <PackageReference Include="NLog.Schema" Version="6.0.0" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="6.0.0" />
 
@@ -41,10 +42,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- nlog.config'in build çıktı klasörüne kopyalanması -->
-    <None Include="nlog.config">
+    <!-- nlog.config zaten implicit Content; sadece meta verisini güncelliyoruz -->
+    <Content Update="nlog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
