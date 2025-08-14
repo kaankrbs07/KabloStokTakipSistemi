@@ -14,13 +14,10 @@ using NLog.Web;
 
 var contentRoot = Directory.GetCurrentDirectory();
 
-// NLog: Configuration/nlog.config (veya configuration/nlog.config) varsa ordan yükle
+// NLog: Configuration/nlog.config
 var nlogPath1 = Path.Combine(contentRoot, "Configuration", "nlog.config");
-var nlogPath2 = Path.Combine(contentRoot, "configuration", "nlog.config");
 if (File.Exists(nlogPath1))
     LogManager.Setup().LoadConfigurationFromFile(nlogPath1);
-else if (File.Exists(nlogPath2))
-    LogManager.Setup().LoadConfigurationFromFile(nlogPath2);
 else
     LogManager.Setup().LoadConfigurationFromAppSettings();
 
