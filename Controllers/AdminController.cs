@@ -1,5 +1,6 @@
 ﻿using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Services.Interfaces;
+using KabloStokTakipSistemi.Middlewares;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KabloStokTakipSistemi.Controllers;
@@ -9,111 +10,46 @@ namespace KabloStokTakipSistemi.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
-    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(IAdminService adminService, ILogger<AdminController> logger)
+    public AdminController(IAdminService adminService)
     {
         _adminService = adminService;
-        _logger = logger;
     }
 
-    /// Tüm adminleri listeler
+    // Tüm adminleri listeler
     [HttpGet]
     public async Task<IActionResult> GetAllAdmins()
     {
-        try
-        {
-            _logger.LogInformation("Getting all admins");
-            var admins = await _adminService.GetAllAdminsAsync();
-            _logger.LogInformation("Retrieved {Count} admins", admins.Count());
-            return Ok(admins);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting all admins");
-            throw;
-        }
+        var admins = await _adminService.GetAllAdminsAsync();
+        return Ok(admins);
     }
 
-    /// Belirli bir admini getirir
+    // Belirli bir admini getirir
     [HttpGet("{adminId:long}")]
     public async Task<IActionResult> GetAdminById(long adminId)
     {
-        try
-        {
-            _logger.LogInformation("Getting admin with ID: {AdminId}", adminId);
-            var admin = await _adminService.GetAdminByIdAsync(adminId);
-
-            if (admin is null)
-            {
-                _logger.LogWarning("Admin not found with ID: {AdminId}", adminId);
-                return NotFound();
-            }
-
-            _logger.LogInformation("Retrieved admin with ID: {AdminId}", adminId);
-            return Ok(admin);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting admin with ID: {AdminId}", adminId);
-            throw;
-        }
+        var admin = await _adminService.GetAdminByIdAsync(adminId);
+        return admin is null
+            ? NotFound(new ErrorBody(AppErrors.Common.NotFound.Code))
+            : Ok(admin);
     }
 
-    /// Yeni admin oluşturur
+    // Yeni admin oluşturur
     [HttpPost]
     public async Task<IActionResult> CreateAdmin([FromBody] (CreateUserDto user, CreateAdminDto admin) dto)
     {
-        try
-        {
-            _logger.LogInformation("Creating new admin with user ID: {UserId}", dto.user.UserID);
-            var ok = await _adminService.CreateAdminAsync(dto.user, dto.admin);
-
-            if (!ok)
-            {
-                _logger.LogWarning("Failed to create admin with user ID: {UserId}", dto.user.UserID);
-                return BadRequest("Admin oluşturulamadı.");
-            }
-
-            _logger.LogInformation("Successfully created admin with user ID: {UserId}", dto.user.UserID);
-            return Ok("Admin başarıyla oluşturuldu.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating admin with user ID: {UserId}", dto.user.UserID);
-            throw;
-        }
+        var ok = await _adminService.CreateAdminAsync(dto.user, dto.admin);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Common.Unexpected.Code));
     }
 
-    /// Admin'in DepartmentName alanını günceller
-    [HttpPut("{adminId:long}/department")]
+    // Admin'in DepartmentName alanını günceller
+    [HttpPatch("{adminId:long}/department")]
     public async Task<IActionResult> UpdateDepartment(long adminId, [FromQuery] string newDepartmentName)
     {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(newDepartmentName))
-            {
-                _logger.LogWarning("Empty department name provided for admin ID: {AdminId}", adminId);
-                return BadRequest("DepartmentName boş olamaz.");
-            }
+        if (string.IsNullOrWhiteSpace(newDepartmentName))
+            return BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
 
-            _logger.LogInformation("Updating department for admin ID: {AdminId} to: {DepartmentName}", adminId,
-                newDepartmentName);
-            var ok = await _adminService.UpdateAdminDepartmentAsync(adminId, newDepartmentName);
-
-            if (!ok)
-            {
-                _logger.LogWarning("Failed to update department for admin ID: {AdminId}", adminId);
-                return NotFound("Admin bulunamadı veya güncellenemedi.");
-            }
-
-            _logger.LogInformation("Successfully updated department for admin ID: {AdminId}", adminId);
-            return Ok("Admin birimi güncellendi.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating department for admin ID: {AdminId}", adminId);
-            throw;
-        }
+        var ok = await _adminService.UpdateAdminDepartmentAsync(adminId, newDepartmentName);
+        return ok ? NoContent() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 }

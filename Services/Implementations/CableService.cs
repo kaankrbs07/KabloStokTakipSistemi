@@ -1,101 +1,56 @@
-﻿using KabloStokTakipSistemi.Data;
+﻿// Services/CableService.cs
+using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Cables;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using KabloStokTakipSistemi.Middlewares; // İstersen AppException kullan
 
 namespace KabloStokTakipSistemi.Services.Implementations
 {
     public class CableService : ICableService
     {
         private readonly AppDbContext _db;
-        private readonly ILogger<CableService> _logger;
-
-        public CableService(AppDbContext db, ILogger<CableService> logger)
+        public CableService(AppDbContext db, ILogger<CableService> _ /*silme: DI imzası aynı kalsın*/)
         {
             _db = db;
-            _logger = logger;
         }
 
-        // ===================== SINGLE =====================
+        // -------- SINGLE --------
         public async Task<IEnumerable<GetSingleCableDto>> GetAllSingleCablesAsync()
         {
-            try
-            {
-                _logger.LogInformation("Getting all single cables from database");
-                var result = await _db.SingleCables
-                    .AsNoTracking()
-                    .Select(s => new GetSingleCableDto(
-                        s.CableID,
-                        s.Color,
-                        s.IsActive,
-                        s.MultiCableID
-                    ))
-                    .ToListAsync();
-
-                _logger.LogInformation("Retrieved {Count} single cables from database", result.Count);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting all single cables from database");
-                throw;
-            }
+            return await _db.SingleCables
+                .AsNoTracking()
+                .Select(s => new GetSingleCableDto(
+                    s.CableID, s.Color, s.IsActive, s.MultiCableID))
+                .ToListAsync();
         }
 
         public async Task<GetSingleCableDto?> GetSingleCableByIdAsync(int cableId)
         {
-            try
-            {
-                _logger.LogInformation("Getting single cable by ID: {CableId}", cableId);
-                var s = await _db.SingleCables.AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.CableID == cableId);
+            var s = await _db.SingleCables.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.CableID == cableId);
 
-                if (s is null)
-                {
-                    _logger.LogWarning("Single cable not found with ID: {CableId}", cableId);
-                    return null;
-                }
-
-                _logger.LogInformation("Retrieved single cable with ID: {CableId}", cableId);
-                return new GetSingleCableDto(
-                    s.CableID,
-                    s.Color,
-                    s.IsActive,
-                    s.MultiCableID
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting single cable by ID: {CableId}", cableId);
-                throw;
-            }
+            return s is null ? null
+                : new GetSingleCableDto(s.CableID, s.Color, s.IsActive, s.MultiCableID);
         }
 
         public async Task<bool> CreateSingleCableAsync(CreateSingleCableDto dto)
         {
-            try
-            {
-                _logger.LogInformation("Creating single cable with Color: {Color}, MultiCableID: {MultiCableId}",
-                    dto.Color, dto.MultiCableID);
-                var entity = new SingleCable
-                {
-                    Color = dto.Color,
-                    IsActive = dto.IsActive,
-                    MultiCableID = dto.MultiCableID
-                };
+            if (string.IsNullOrWhiteSpace(dto.Color))
+                throw new AppException(AppErrors.Validation.BadRequest, "Color boş olamaz.");
 
-                _db.SingleCables.Add(entity);
-                await _db.SaveChangesAsync();
-                _logger.LogInformation("Successfully created single cable with Color: {Color}", dto.Color);
-                return true;
-            }
-            catch (Exception ex)
+            var entity = new SingleCable
             {
-                _logger.LogError(ex, "Error creating single cable with Color: {Color}", dto.Color);
-                throw;
-            }
+                Color = dto.Color.Trim(),
+                IsActive = dto.IsActive,
+                MultiCableID = dto.MultiCableID
+            };
+
+            _db.SingleCables.Add(entity);
+            await _db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> DeactivateSingleCableAsync(int cableId)
@@ -109,24 +64,18 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
         public async Task<IEnumerable<GetSingleCableDto>> GetInactiveSingleCablesAsync()
         {
-            // SP: dbo.sp_GetInactiveSingleCables
             return await _db.Set<GetSingleCableDto>()
                 .FromSqlRaw("EXEC dbo.sp_GetInactiveSingleCables")
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        // ====================== MULTI ======================
+        // -------- MULTI --------
         public async Task<IEnumerable<GetMultiCableDto>> GetAllMultiCablesAsync()
         {
             return await _db.MultipleCables
                 .AsNoTracking()
-                .Select(m => new GetMultiCableDto(
-                    m.MultiCableID,
-                    m.CableName,
-                    m.Quantity,
-                    m.IsActive
-                ))
+                .Select(m => new GetMultiCableDto(m.MultiCableID, m.CableName, m.Quantity, m.IsActive))
                 .ToListAsync();
         }
 
@@ -135,21 +84,18 @@ namespace KabloStokTakipSistemi.Services.Implementations
             var m = await _db.MultipleCables.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.MultiCableID == multiCableId);
 
-            return m is null
-                ? null
-                : new GetMultiCableDto(
-                    m.MultiCableID,
-                    m.CableName,
-                    m.Quantity,
-                    m.IsActive
-                );
+            return m is null ? null
+                : new GetMultiCableDto(m.MultiCableID, m.CableName, m.Quantity, m.IsActive);
         }
 
         public async Task<bool> CreateMultiCableAsync(CreateMultiCableDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.CableName))
+                throw new AppException(AppErrors.Validation.BadRequest, "CableName boş olamaz.");
+
             var entity = new MultiCable
             {
-                CableName = dto.CableName,
+                CableName = dto.CableName.Trim(),
                 Quantity = dto.Quantity,
                 IsActive = dto.IsActive
             };
@@ -170,36 +116,31 @@ namespace KabloStokTakipSistemi.Services.Implementations
 
         public async Task<IEnumerable<GetMultiCableDto>> GetInactiveMultiCablesAsync()
         {
-            // SP: dbo.sp_GetInactiveMultipleCables  (liste bu isimde; mevcut olanı kullanıyoruz)
             return await _db.Set<GetMultiCableDto>()
                 .FromSqlRaw("EXEC dbo.sp_GetInactiveMultipleCables")
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        // ============== MULTI CONTENT ==============
+        // -------- MULTI CONTENT --------
         public async Task<IEnumerable<GetMultiCableContentDto>> GetMultiCableContentsAsync(int multiCableId)
         {
-            // SP: dbo.sp_GetMultiCableContentDetails @MultiCableID
             var p = new[] { new SqlParameter("@MultiCableID", multiCableId) };
-
             return await _db.Set<GetMultiCableContentDto>()
                 .FromSqlRaw("EXEC dbo.sp_GetMultiCableContentDetails @MultiCableID", p)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        // =================== STOCK MOVEMENTS ====================
-        public async Task<bool> InsertStockMovementAsync(int cableId, string tableName, int quantity,
-            string movementType, long userId)
+        // -------- STOCK MOVEMENTS --------
+        public async Task<bool> InsertStockMovementAsync(int cableId, string tableName, int quantity, string movementType, long userId)
         {
-            // SP: dbo.sp_InsertStockMovement @CableID, @TableName, @Quantity, @MovementType, @UserID
             var p = new[]
             {
                 new SqlParameter("@CableID", cableId),
-                new SqlParameter("@TableName", tableName), // 'Single' | 'Multi'
+                new SqlParameter("@TableName", tableName),
                 new SqlParameter("@Quantity", quantity),
-                new SqlParameter("@MovementType", movementType), // 'Giriş' | 'Çıkış'
+                new SqlParameter("@MovementType", movementType),
                 new SqlParameter("@UserID", userId)
             };
 
@@ -209,27 +150,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
             return true;
         }
 
-        // =================== EXTRA: COLOR STATUS =================
-        public async Task<int> GetStockStatusByColorAsync(string color)
-        {
-            // SP: dbo.sp_GetStockStatusByColor @Color  -> Toplam/uygun sütunu döndürüyor varsayımıyla ilk kolonu int okuyoruz.
-            var p = new[] { new SqlParameter("@Color", color) };
-            var rows = await _db.Set<TempColorStatusRow>()
-                .FromSqlRaw("EXEC dbo.sp_GetStockStatusByColor @Color", p)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return rows.FirstOrDefault()?.Total ?? 0;
-        }
-
-        private sealed class TempColorStatusRow
-        {
-            public int Total { get; set; }
-        }
-
-        // ===================== THRESHOLDS =====================
-
-// Renk bazlı kritik stok seviyesi ekle/güncelle
+        // -------- THRESHOLDS --------
         public async Task<bool> SetColorThresholdAsync(CreateColorThresholdDto dto)
         {
             var p = new[]
@@ -237,13 +158,10 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 new SqlParameter("@Color", dto.Color),
                 new SqlParameter("@MinQuantity", dto.MinQuantity)
             };
-
             await _db.Database.ExecuteSqlRawAsync("EXEC dbo.sp_SetColorThreshold @Color, @MinQuantity", p);
-            _logger.LogInformation("ColorThreshold güncellendi: {Color} -> {Qty}", dto.Color, dto.MinQuantity);
             return true;
         }
 
-// Çoklu kablo bazlı kritik stok seviyesi ekle/güncelle
         public async Task<bool> SetCableThresholdAsync(CreateCableThresholdDto dto)
         {
             var p = new[]
@@ -251,14 +169,10 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 new SqlParameter("@MultiCableID", dto.MultiCableID),
                 new SqlParameter("@MinQuantity", dto.MinQuantity)
             };
-
             await _db.Database.ExecuteSqlRawAsync("EXEC dbo.sp_SetCableThreshold @MultiCableID, @MinQuantity", p);
-            _logger.LogInformation("CableThreshold güncellendi: {MultiCableID} -> {Qty}", dto.MultiCableID,
-                dto.MinQuantity);
             return true;
         }
 
-// Renk bazlı tüm eşikleri listele
         public async Task<IEnumerable<GetColorThresholdDto>> GetColorThresholdsAsync()
         {
             return await _db.Set<GetColorThresholdDto>()
@@ -267,15 +181,26 @@ namespace KabloStokTakipSistemi.Services.Implementations
                 .ToListAsync();
         }
 
-// Çoklu kablo bazlı tüm eşikleri listele
         public async Task<IEnumerable<GetCableThresholdDto>> GetCableThresholdsAsync()
         {
             return await _db.Set<GetCableThresholdDto>()
                 .FromSqlRaw(@"SELECT c.MultiCableID, mc.CableName, c.MinQuantity
-                      FROM CableThresholds c
-                      JOIN MultipleCables mc ON mc.MultiCableID = c.MultiCableID")
+                              FROM CableThresholds c
+                              JOIN MultipleCables mc ON mc.MultiCableID = c.MultiCableID")
                 .AsNoTracking()
                 .ToListAsync();
         }
+        public async Task<int> GetStockStatusByColorAsync(string color)
+        {
+            if (string.IsNullOrWhiteSpace(color))
+                throw new AppException(AppErrors.Validation.BadRequest, "Color boş olamaz.");
+
+            var p = new[] { new SqlParameter("@Color", color.Trim()) };
+            var result = await _db.Database
+                .SqlQueryRaw<int>("EXEC dbo.sp_GetStockStatusByColor @Color", p)
+                .FirstAsync();
+            return result;
+        }
+
     }
 }

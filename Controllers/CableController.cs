@@ -1,6 +1,7 @@
 ﻿using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.DTOs.Cables;
 using KabloStokTakipSistemi.Services.Interfaces;
+using KabloStokTakipSistemi.Middlewares;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,17 +9,11 @@ namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Tüm metodlar için yetkilendirme, role göre özelleştirme yapılacak
+[Authorize] // Tüm metodlar için yetkilendirme, role bazlı özelleştirme altta
 public class CableController : ControllerBase
 {
     private readonly ICableService _cableService;
-    private readonly ILogger<CableController> _logger;
-
-    public CableController(ICableService cableService, ILogger<CableController> logger)
-    {
-        _cableService = cableService;
-        _logger = logger;
-    }
+    public CableController(ICableService cableService) => _cableService = cableService;
 
     // ===================== SINGLE CABLE =====================
 
@@ -29,27 +24,29 @@ public class CableController : ControllerBase
         return Ok(cables);
     }
 
-    [HttpGet("single/{id}")]
+    [HttpGet("single/{id:int}")]
     public async Task<IActionResult> GetSingleCableById(int id)
     {
         var cable = await _cableService.GetSingleCableByIdAsync(id);
-        return cable is null ? NotFound() : Ok(cable);
+        return cable is null
+            ? NotFound(new ErrorBody(AppErrors.Common.NotFound.Code))
+            : Ok(cable);
     }
 
     [HttpPost("single")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateSingleCable([FromBody] CreateSingleCableDto dto)
     {
-        var success = await _cableService.CreateSingleCableAsync(dto);
-        return success ? Ok() : BadRequest();
+        var ok = await _cableService.CreateSingleCableAsync(dto);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Common.Unexpected.Code));
     }
 
-    [HttpDelete("single/{id}")]
+    [HttpDelete("single/{id:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeactivateSingleCable(int id)
     {
-        var success = await _cableService.DeactivateSingleCableAsync(id);
-        return success ? Ok() : NotFound();
+        var ok = await _cableService.DeactivateSingleCableAsync(id);
+        return ok ? NoContent() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 
     [HttpGet("single/inactive")]
@@ -69,27 +66,29 @@ public class CableController : ControllerBase
         return Ok(cables);
     }
 
-    [HttpGet("multi/{id}")]
+    [HttpGet("multi/{id:int}")]
     public async Task<IActionResult> GetMultiCableById(int id)
     {
         var cable = await _cableService.GetMultiCableByIdAsync(id);
-        return cable is null ? NotFound() : Ok(cable);
+        return cable is null
+            ? NotFound(new ErrorBody(AppErrors.Common.NotFound.Code))
+            : Ok(cable);
     }
 
     [HttpPost("multi")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateMultiCable([FromBody] CreateMultiCableDto dto)
     {
-        var success = await _cableService.CreateMultiCableAsync(dto);
-        return success ? Ok() : BadRequest();
+        var ok = await _cableService.CreateMultiCableAsync(dto);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Common.Unexpected.Code));
     }
 
-    [HttpDelete("multi/{id}")]
+    [HttpPatch("multi/{id:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeactivateMultiCable(int id)
     {
-        var success = await _cableService.DeactivateMultiCableAsync(id);
-        return success ? Ok() : NotFound();
+        var ok = await _cableService.DeactivateMultiCableAsync(id);
+        return ok ? NoContent() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 
     [HttpGet("multi/inactive")]
@@ -102,7 +101,7 @@ public class CableController : ControllerBase
 
     // ===================== MULTI CONTENT =====================
 
-    [HttpGet("multi/{id}/contents")]
+    [HttpGet("multi/{id:int}/contents")]
     public async Task<IActionResult> GetMultiCableContents(int id)
     {
         var contents = await _cableService.GetMultiCableContentsAsync(id);
@@ -115,10 +114,9 @@ public class CableController : ControllerBase
     [Authorize(Roles = "Admin,Employee")]
     public async Task<IActionResult> InsertStockMovement([FromBody] CreateStockMovementDto dto)
     {
-        var success = await _cableService.InsertStockMovementAsync(
-            dto.CableID, dto.TableName, dto.Quantity, dto.MovementType, dto.UserID
-        );
-        return success ? Ok() : BadRequest();
+        var ok = await _cableService.InsertStockMovementAsync(
+            dto.CableID, dto.TableName, dto.Quantity, dto.MovementType, dto.UserID);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
     }
 
     // ===================== THRESHOLDS =====================
@@ -135,8 +133,8 @@ public class CableController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetColorThreshold([FromBody] CreateColorThresholdDto dto)
     {
-        var success = await _cableService.SetColorThresholdAsync(dto);
-        return success ? Ok() : BadRequest();
+        var ok = await _cableService.SetColorThresholdAsync(dto);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
     }
 
     [HttpGet("thresholds/cable")]
@@ -151,7 +149,7 @@ public class CableController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetCableThreshold([FromBody] CreateCableThresholdDto dto)
     {
-        var success = await _cableService.SetCableThresholdAsync(dto);
-        return success ? Ok() : BadRequest();
+        var ok = await _cableService.SetCableThresholdAsync(dto);
+        return ok ? Ok() : BadRequest(new ErrorBody(AppErrors.Validation.BadRequest.Code));
     }
 }
