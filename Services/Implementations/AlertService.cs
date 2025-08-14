@@ -38,6 +38,7 @@ public sealed class AlertService : IAlertService
         q = q.OrderByDescending(a => a.AlertDate).ThenBy(a => a.AlertID);
         if (skip is not null) q = q.Skip(skip.Value);
         if (take is not null) q = q.Take(take.Value);
+
         return await q.ProjectTo<GetAlertDto>(_mapper.ConfigurationProvider).ToListAsync(ct);
     }
 
@@ -63,7 +64,6 @@ public sealed class AlertService : IAlertService
             var target = (alert.Description ?? string.Empty) + suffix;
             alert.Description = target.Length > 255 ? target[..255] : target;
         }
-
         await _db.SaveChangesAsync(ct);
         return true;
     }
@@ -81,7 +81,6 @@ public sealed class AlertService : IAlertService
             var target = (alert.Description ?? string.Empty) + suffix;
             alert.Description = target.Length > 255 ? target[..255] : target;
         }
-
         await _db.SaveChangesAsync(ct);
         return true;
     }
@@ -90,10 +89,7 @@ public sealed class AlertService : IAlertService
     public async Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default)
     {
         var p = new SqlParameter("@Color", color);
-        var result = await _db.Database
-            .SqlQueryRaw<bool>("SELECT dbo.fn_HasActiveAlertForColor(@Color)", p)
-            .FirstAsync(ct);
-        return result;
+        return await _db.Database.SqlQueryRaw<bool>("SELECT dbo.fn_HasActiveAlertForColor(@Color)", p).FirstAsync(ct);
     }
 
     public async Task<bool> HasActiveAlertForMultiAsync(int multiCableId, CancellationToken ct = default)
@@ -106,16 +102,13 @@ public sealed class AlertService : IAlertService
     public async Task<ThresholdEvaluationResult> EvaluateSingleThresholdAsync(
         string color, int currentQty, int minThreshold, CancellationToken ct = default)
     {
-        // aktif alert var mı?
         var active = await _db.Alerts
             .FirstOrDefaultAsync(a => a.IsActive && a.AlertType == "Color" && a.Color == color, ct);
 
         if (currentQty < minThreshold)
         {
-            // Altına düştü
             if (active is null)
             {
-                // 1) Alert aç
                 var alert = new Alert
                 {
                     AlertType = "Color",
@@ -127,36 +120,19 @@ public sealed class AlertService : IAlertService
                 _db.Alerts.Add(alert);
                 await _db.SaveChangesAsync(ct);
 
-                // 2) Mail gönder
                 var rcptCount = await SendLowStockMailForSingleAsync(color, currentQty, minThreshold, ct);
-
-                return new ThresholdEvaluationResult(
-                    AlertCreatedAndNotified: rcptCount > 0,
-                    AlertResolved: false,
-                    WasAlreadyActive: false,
-                    RecipientCount: rcptCount,
-                    CurrentQty: currentQty,
-                    MinThreshold: minThreshold,
-                    Kind: "Single",
-                    Key: color
-                );
+                return new ThresholdEvaluationResult(rcptCount > 0, false, false, rcptCount, currentQty, minThreshold, "Single", color);
             }
-
-            // Zaten aktif alert vardı: tekrar mail atma (spam önleme)
             return new ThresholdEvaluationResult(false, false, true, 0, currentQty, minThreshold, "Single", color);
         }
         else
         {
-            // Üstüne çıktı: aktif alert varsa kapat
             if (active is not null)
             {
                 active.IsActive = false;
                 await _db.SaveChangesAsync(ct);
-
                 return new ThresholdEvaluationResult(false, true, true, 0, currentQty, minThreshold, "Single", color);
             }
-
-            // Zaten alert yoktu, bir şey yapma
             return new ThresholdEvaluationResult(false, false, false, 0, currentQty, minThreshold, "Single", color);
         }
     }
@@ -183,21 +159,9 @@ public sealed class AlertService : IAlertService
                 await _db.SaveChangesAsync(ct);
 
                 var rcptCount = await SendLowStockMailForMultiAsync(multiCableId, currentQty, minThreshold, ct);
-
-                return new ThresholdEvaluationResult(
-                    AlertCreatedAndNotified: rcptCount > 0,
-                    AlertResolved: false,
-                    WasAlreadyActive: false,
-                    RecipientCount: rcptCount,
-                    CurrentQty: currentQty,
-                    MinThreshold: minThreshold,
-                    Kind: "Multi",
-                    Key: multiCableId.ToString()
-                );
+                return new ThresholdEvaluationResult(rcptCount > 0, false, false, rcptCount, currentQty, minThreshold, "Multi", multiCableId.ToString());
             }
-
-            return new ThresholdEvaluationResult(false, false, true, 0, currentQty, minThreshold, "Multi",
-                multiCableId.ToString());
+            return new ThresholdEvaluationResult(false, false, true, 0, currentQty, minThreshold, "Multi", multiCableId.ToString());
         }
         else
         {
@@ -205,17 +169,13 @@ public sealed class AlertService : IAlertService
             {
                 active.IsActive = false;
                 await _db.SaveChangesAsync(ct);
-
-                return new ThresholdEvaluationResult(false, true, true, 0, currentQty, minThreshold, "Multi",
-                    multiCableId.ToString());
+                return new ThresholdEvaluationResult(false, true, true, 0, currentQty, minThreshold, "Multi", multiCableId.ToString());
             }
-
-            return new ThresholdEvaluationResult(false, false, false, 0, currentQty, minThreshold, "Multi",
-                multiCableId.ToString());
+            return new ThresholdEvaluationResult(false, false, false, 0, currentQty, minThreshold, "Multi", multiCableId.ToString());
         }
     }
 
-    // -------- EMAIL NOTIFICATIONS (public mevcut imzalar) --------
+    // -------- E-MAIL NOTIFICATIONS --------
     public async Task<bool> NotifyAdminsForAlertAsync(int alertId, CancellationToken ct = default)
     {
         var alert = await _db.Alerts.AsNoTracking().FirstOrDefaultAsync(a => a.AlertID == alertId, ct);
@@ -225,9 +185,7 @@ public sealed class AlertService : IAlertService
         if (adminEmails.Count == 0) return false;
 
         var (subject, html, text) = BuildAlertEmail(alert);
-        await _email.SendAsync(
-            to: adminEmails[0], subject: subject, htmlBody: html, textBody: text,
-            bcc: adminEmails.Skip(1), ct: ct);
+        await _email.SendAsync(adminEmails[0], subject, html, text, bcc: adminEmails.Skip(1), ct: ct);
         return true;
     }
 
@@ -237,53 +195,37 @@ public sealed class AlertService : IAlertService
         if (adminEmails.Count == 0) return false;
 
         var (subject, html, text) = BuildSingleLowStockEmail(color, qty, minThreshold: null);
-        await _email.SendAsync(
-            to: adminEmails[0], subject: subject, htmlBody: html, textBody: text,
-            bcc: adminEmails.Skip(1), ct: ct);
+        await _email.SendAsync(adminEmails[0], subject, html, text, bcc: adminEmails.Skip(1), ct: ct);
         return true;
     }
 
-    // -------- PRIVATE: EMAIL BUILDERS --------
-    private async Task<int> SendLowStockMailForSingleAsync(string color, int qty, int min, CancellationToken ct)
+    // -------- PRIVATE HELPERS --------
+    private async Task<List<string>> GetAdminEmailsAsync(CancellationToken ct)
     {
-        var adminEmails = await GetAdminEmailsAsync(ct);
-        if (adminEmails.Count == 0) return 0;
-
-        var (subject, html, text) = BuildSingleLowStockEmail(color, qty, min);
-        await _email.SendAsync(adminEmails[0], subject, html, text, bcc: adminEmails.Skip(1), ct: ct);
-        return adminEmails.Count;
+        return await _db.Users
+            .Where(u => u.Role == AdminRole && u.IsActive && !string.IsNullOrEmpty(u.Email))
+            .Select(u => u.Email!)
+            .Distinct()
+            .ToListAsync(ct);
     }
 
-    private async Task<int> SendLowStockMailForMultiAsync(int multiCableId, int qty, int min, CancellationToken ct)
-    {
-        var adminEmails = await GetAdminEmailsAsync(ct);
-        if (adminEmails.Count == 0) return 0;
-
-        var (subject, html, text) = BuildMultiLowStockEmail(multiCableId, qty, min);
-        await _email.SendAsync(adminEmails[0], subject, html, text, bcc: adminEmails.Skip(1), ct: ct);
-        return adminEmails.Count;
-    }
-
-    private static (string Subject, string Html, string Text) BuildSingleLowStockEmail(string color, int qty,
-        int? minThreshold)
+    private static (string Subject, string Html, string Text) BuildSingleLowStockEmail(string color, int qty, int? minThreshold)
     {
         var subject = $"Stok Uyarısı • {color} kablosu kritik seviyede";
         var minInfo = minThreshold is null ? "" : $" (Min: {minThreshold})";
         var html = $@"<h3>Stok Uyarısı</h3>
-            <p><b>{color}</b> renkli kablonun stoğu <b>{qty}</b>{minInfo}.</p>
-            <p>Lütfen gerekli replenishment/giriş işlemlerini başlatın.</p>";
-        var text =
-            $"Stok Uyarısı: {color} kablosunun stoğu {qty}{(minThreshold is null ? "" : $" (Min: {minThreshold})")}.";
+<p><b>{color}</b> renkli kablonun stoğu <b>{qty}</b>{minInfo}.</p>
+<p>Lütfen gerekli replenishment/giriş işlemlerini başlatın.</p>";
+        var text = $"Stok Uyarısı: {color} kablosunun stoğu {qty}{(minThreshold is null ? "" : $" (Min: {minThreshold})")}.";
         return (subject, html, text);
     }
 
-    private static (string Subject, string Html, string Text) BuildMultiLowStockEmail(int multiCableId, int qty,
-        int minThreshold)
+    private static (string Subject, string Html, string Text) BuildMultiLowStockEmail(int multiCableId, int qty, int minThreshold)
     {
         var subject = $"Stok Uyarısı • MultiCable #{multiCableId} kritik seviyede";
         var html = $@"<h3>Stok Uyarısı</h3>
-            <p><b>MultiCableID: {multiCableId}</b> stoğu <b>{qty}</b> (Min: {minThreshold}).</p>
-            <p>Lütfen gerekli replenishment/giriş işlemlerini başlatın.</p>";
+<p><b>MultiCableID: {multiCableId}</b> stoğu <b>{qty}</b> (Min: {minThreshold}).</p>
+<p>Lütfen gerekli replenishment/giriş işlemlerini başlatın.</p>";
         var text = $"Stok Uyarısı: MultiCable #{multiCableId} stoğu {qty} (Min: {minThreshold}).";
         return (subject, html, text);
     }
@@ -297,16 +239,15 @@ public sealed class AlertService : IAlertService
             _ => "Stok Uyarısı"
         };
 
-        var html = $@"
-            <h3>Stok Uyarısı</h3>
-            <ul>
-                <li><b>Tür:</b> {a.AlertType}</li>
-                {(string.IsNullOrWhiteSpace(a.Color) ? "" : $"<li><b>Renk:</b> {a.Color}</li>")}
-                {(a.MultiCableID is null ? "" : $"<li><b>MultiCableID:</b> {a.MultiCableID}</li>")}
-                <li><b>Tarih:</b> {a.AlertDate:yyyy-MM-dd HH:mm}</li>
-                {(string.IsNullOrWhiteSpace(a.Description) ? "" : $"<li><b>Açıklama:</b> {a.Description}</li>")}
-                <li><b>Durum:</b> {(a.IsActive ? "Aktif" : "Kapalı")}</li>
-            </ul>";
+        var html = $@"<h3>Stok Uyarısı</h3>
+<ul>
+<li><b>Tür:</b> {a.AlertType}</li>
+{(string.IsNullOrWhiteSpace(a.Color) ? "" : $"<li><b>Renk:</b> {a.Color}</li>")}
+{(a.MultiCableID is null ? "" : $"<li><b>MultiCableID:</b> {a.MultiCableID}</li>")}
+<li><b>Tarih:</b> {a.AlertDate:yyyy-MM-dd HH:mm}</li>
+{(string.IsNullOrWhiteSpace(a.Description) ? "" : $"<li><b>Açıklama:</b> {a.Description}</li>")}
+<li><b>Durum:</b> {(a.IsActive ? "Aktif" : "Kapalı")}</li>
+</ul>";
 
         var text =
             $"Stok Uyarısı\n" +
@@ -320,14 +261,23 @@ public sealed class AlertService : IAlertService
         return (subject, html, text);
     }
 
-    private async Task<List<string>> GetAdminEmailsAsync(CancellationToken ct)
+    private static string Trim255(string s) => s.Length > 255 ? s[..255] : s;
+
+    private async Task<int> SendLowStockMailForSingleAsync(string color, int qty, int min, CancellationToken ct)
     {
-        return await _db.Users
-            .Where(u => u.Role == AdminRole && u.IsActive && !string.IsNullOrEmpty(u.Email))
-            .Select(u => u.Email!)
-            .Distinct()
-            .ToListAsync(ct);
+        var emails = await GetAdminEmailsAsync(ct);
+        if (emails.Count == 0) return 0;
+        var (subject, html, text) = BuildSingleLowStockEmail(color, qty, min);
+        await _email.SendAsync(emails[0], subject, html, text, bcc: emails.Skip(1), ct: ct);
+        return emails.Count;
     }
 
-    private static string Trim255(string s) => s.Length > 255 ? s[..255] : s;
+    private async Task<int> SendLowStockMailForMultiAsync(int multiCableId, int qty, int min, CancellationToken ct)
+    {
+        var emails = await GetAdminEmailsAsync(ct);
+        if (emails.Count == 0) return 0;
+        var (subject, html, text) = BuildMultiLowStockEmail(multiCableId, qty, min);
+        await _email.SendAsync(emails[0], subject, html, text, bcc: emails.Skip(1), ct: ct);
+        return emails.Count;
+    }
 }

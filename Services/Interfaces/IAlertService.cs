@@ -26,11 +26,11 @@ public interface IAlertService
     Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default);
     Task<bool> HasActiveAlertForMultiAsync(int multiCableId, CancellationToken ct = default);
 
-    // --- E-posta bildirimleri (mevcut) ---
+    // --- E-posta bildirimleri (manuel tetikleme ihtiyacı kalmasa da geriye dönük kaldı) ---
     Task<bool> NotifyAdminsForAlertAsync(int alertId, CancellationToken ct = default);
     Task<bool> NotifyAdminsForLowStockAsync(string color, int qty, CancellationToken ct = default);
 
-    // --- OTOMATİK TETİK GİRİŞ NOKTALARI ---
+    // --- OTOMATİK TETİK (stok hareketi SONRASI) ---
     Task<ThresholdEvaluationResult> EvaluateSingleThresholdAsync(
         string color, int currentQty, int minThreshold, CancellationToken ct = default);
 
@@ -38,14 +38,14 @@ public interface IAlertService
         int multiCableId, int currentQty, int minThreshold, CancellationToken ct = default);
 }
 
-// DTO: servis döndürsün 
+// Servisin kısa özeti
 public sealed record ThresholdEvaluationResult(
-    bool AlertCreatedAndNotified, // yeni alert açıldı + mail gitti
-    bool AlertResolved, // aktif alert kapatıldı
-    bool WasAlreadyActive, // zaten aktif alert vardı
-    int RecipientCount, // e-posta alan admin sayısı
+    bool AlertCreatedAndNotified, // yeni alert + e-posta gitti
+    bool AlertResolved,           // eşik üstüne çıktı, aktif alert kapandı
+    bool WasAlreadyActive,        // zaten aktifti (spam önleme)
+    int RecipientCount,           // e-posta alan admin sayısı
     int CurrentQty,
     int MinThreshold,
-    string Kind, // "Single" | "Multi"
-    string Key // Single: Color, Multi: MultiCableId string'i
+    string Kind,                  // "Single" | "Multi"
+    string Key                    // Single: Color, Multi: MultiCableId
 );
