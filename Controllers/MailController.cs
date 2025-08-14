@@ -1,5 +1,4 @@
-﻿// Controllers/MailController.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using KabloStokTakipSistemi.Middlewares; // ErrorBody, AppErrors
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
