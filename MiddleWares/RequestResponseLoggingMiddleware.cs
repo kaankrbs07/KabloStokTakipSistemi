@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Security.Claims;
 using NLog; // ScopeContext
-using ILogger = Microsoft.Extensions.Logging.ILogger;
+
 
 namespace KabloStokTakipSistemi.Middlewares;
 
