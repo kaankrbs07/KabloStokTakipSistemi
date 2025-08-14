@@ -2,9 +2,7 @@
 
 namespace KabloStokTakipSistemi.Configuration
 {
-    /// <summary>
     /// SMTP konfigürasyonu (appsettings.json -> "Smtp")
-    /// </summary>
     public sealed class SmtpOptions
     {
         public string Host { get; init; } = default!;
