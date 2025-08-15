@@ -1,111 +1,119 @@
-using System.Security.Claims;
 using System.Text;
-using System.Text.Json.Serialization;
+using System.IdentityModel.Tokens.Jwt;
 using KabloStokTakipSistemi.Configuration;
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.Middlewares;
-using KabloStokTakipSistemi.Services.Implementations;
 using KabloStokTakipSistemi.Services.Interfaces;
+using KabloStokTakipSistemi.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using NLog;
+using Microsoft.OpenApi.Models;
 using NLog.Web;
 
-var contentRoot = Directory.GetCurrentDirectory();
-
-// NLog: Configuration/nlog.config
-var nlogPath1 = Path.Combine(contentRoot, "Configuration", "nlog.config");
-if (File.Exists(nlogPath1))
-    LogManager.Setup().LoadConfigurationFromFile(nlogPath1);
-else
-    LogManager.Setup().LoadConfigurationFromAppSettings();
-
 var builder = WebApplication.CreateBuilder(args);
-var configuration = builder.Configuration;
 
-// Logging -> NLog
+// ---------- Logging (NLog) ----------
 builder.Logging.ClearProviders();
-builder.Host.UseNLog();
+builder.Host.UseNLog(); // NLog.config kökten otomatik okunur
 
-// DbContext
+// ---------- Kestrel + HTTPS yönlendirme ----------
+builder.WebHost.ConfigureKestrel(k =>
+{
+    k.ListenLocalhost(5013);                       // HTTP
+    k.ListenLocalhost(7013, o => o.UseHttps());    // HTTPS
+});
+builder.Services.AddHttpsRedirection(o => o.HttpsPort = 7013);
+
+// ---------- DbContext ----------
 builder.Services.AddDbContext<AppDbContext>(opt =>
-{
-    var cs = configuration.GetConnectionString("DefaultConnection");
-    opt.UseSqlServer(cs);
-});
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// AutoMapper
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// ---------- Options (appsettings bind) ----------
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 
-// Controllers + JSON
-builder.Services.AddControllers()
-    .AddJsonOptions(o =>
-    {
-        o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// CORS
-builder.Services.AddCors(opt =>
-{
-    opt.AddPolicy("AllowAll", p => p
-        .AllowAnyOrigin()
-        .AllowAnyHeader()
-        .AllowAnyMethod());
-});
-
-// SMTP + Email
-builder.Services.AddOptions<SmtpOptions>()
-    .Bind(configuration.GetSection("Smtp"))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-builder.Services.AddScoped<IEmailService, EmailService>();
-
-// Domain servisleri
+// ---------- DI: Services ----------
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<ICableService, CableService>();
 builder.Services.AddScoped<IStockMovementService, StockMovementService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ILogService, LogService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
-// Auth/JWT
-builder.Services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddControllers();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(opt =>
+// ---------- CORS ----------
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
+// ---------- Authentication (JWT Bearer) ----------
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); // claim map karışmasın
+var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
+          ?? throw new InvalidOperationException("Jwt ayarları bulunamadı (appsettings: Jwt).");
+
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        var jwt = configuration.GetSection("Jwt").Get<JwtOptions>()
-                  ?? throw new InvalidOperationException("Jwt ayarları eksik (appsettings).");
-        opt.TokenValidationParameters = new()
+        options.SaveToken = true;
+        options.RequireHttpsMetadata = false; // dev için
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidIssuer = jwt.Issuer,
-            ValidAudience = jwt.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
             ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
             ValidateIssuer = true,
+            ValidIssuer = jwt.Issuer,
             ValidateAudience = true,
+            ValidAudience = jwt.Audience,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
-            RoleClaimType = ClaimTypes.Role,
-            NameClaimType = ClaimTypes.NameIdentifier
+            NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddResponseCompression();
+
+// ---------- Swagger ----------
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Kablo Stok Takip Sistemi API", Version = "v1" });
+
+    // JWT için Swagger'da Authorize butonu
+    var scheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Bearer {token}"
+    };
+    c.AddSecurityDefinition("Bearer", scheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { scheme, Array.Empty<string>() }
+    });
+});
 
 var app = builder.Build();
 
-// Swagger (sadece Development)
+// ---------- Pipeline ----------
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -116,26 +124,22 @@ else
     app.UseHsts();
 }
 
-// Global exception -> NLog
-app.UseMiddleware<GlobalExceptionMiddleware>();
+// Root'u Swagger'a yönlendir (frontend henüz yok, 404 olmasın)
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
-// Request/Response logging (isteğe bağlı, varsa projende)
-app.UseMiddleware<RequestResponseLoggingMiddleware>();
+app.UseRouting();
 
-app.UseHttpsRedirection();
-app.UseResponseCompression();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SQL SESSION_CONTEXT için (UserID claim’inden yazar) — Auth’tan sonra
+// Kimlik sonrası SessionContext → Request/Response log
 app.UseMiddleware<SessionContextMiddleware>();
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 app.MapControllers();
 
-// NLog flush
-app.Lifetime.ApplicationStopped.Register(LogManager.Shutdown);
-
 app.Run();
+
 
