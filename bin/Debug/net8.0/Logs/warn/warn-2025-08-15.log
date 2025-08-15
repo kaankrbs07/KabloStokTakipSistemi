@@ -1,2 +1,2 @@
-2025-08-15 08:37:36.1290|WARN|Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware|cid=|uid=|path=http://localhost/|msg=Failed to determine the https port for redirect. 
-2025-08-15 08:37:36.2740|WARN|KabloStokTakipSistemi.Middlewares.SessionContextMiddleware|cid=|uid=|path=http://localhost/|msg=SESSION_CONTEXT ayarlanamadı. Geçerli UserID bulunamadı. 
+2025-08-15 09:01:14.6303|WARN|KabloStokTakipSistemi.Middlewares.SessionContextMiddleware|cid=0HNERO4I73KM2:00000001|uid=-|path=https://localhost/|msg=SESSION_CONTEXT ayarlanamadı. Geçerli UserID bulunamadı. 
+2025-08-15 09:01:14.6598|WARN|KabloStokTakipSistemi.Middlewares.RequestResponseLoggingMiddleware|cid=0HNERO4I73KM2:00000001|uid=-|path=https://localhost/|msg=HTTP GET / => 404 (151 ms) 
