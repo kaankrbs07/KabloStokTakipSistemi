@@ -119,6 +119,7 @@ else
 // Global exception -> NLog
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+// Request/Response logging (isteğe bağlı, varsa projende)
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 app.UseHttpsRedirection();
