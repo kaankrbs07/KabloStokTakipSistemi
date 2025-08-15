@@ -1,0 +1,223 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Kayıt Ol";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>@ViewData["Title"] - Kablo Stok Takip Sistemi</title>
+    <style>
+        :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+        body { margin:0; background:#0f172a; color:#e2e8f0; display:grid; place-items:center; min-height:100vh; }
+        .card { width: 560px; background:#111827; padding:24px; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        h1 { margin:0 0 8px; font-size:22px; }
+        .muted { color:#94a3b8; margin-bottom:18px; font-size:14px; }
+        label { display:block; font-size:14px; margin:12px 0 6px; }
+        input, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
+        input:focus, select:focus { outline:none; border-color:#60a5fa; }
+        .row { display:grid; gap:12px; grid-template-columns:1fr 1fr; }
+        .btn { width:100%; margin-top:14px; padding:10px 12px; border-radius:10px; border:0; background:#2563eb; color:white; font-weight:600; cursor:pointer; }
+        .btn:disabled { opacity:.6; cursor:not-allowed; }
+        .status { margin-top:12px; font-size:13px; padding:10px; border-radius:10px; }
+        .ok { background:#052e16; color:#86efac; border:1px solid #14532d; }
+        .err { background:#3f1d20; color:#fecaca; border:1px solid #7f1d1d; }
+        .hint { font-size:12px; color:#64748b; margin-top:6px; }
+        .rightbtn { position:absolute; right:8px; top:34px; border:1px solid #334155; background:#0b1220; color:#cbd5e1; padding:4px 8px; border-radius:8px; cursor:pointer; }
+        .rel { position:relative; }
+        .code { font-family: ui-monospace, Menlo, Consolas, monospace; color:#cbd5e1; }
+    </style>
+</head>
+<body>
+<section class="card">
+    <h1>Kayıt Ol</h1>
+    <p class="muted">Bilgilerinizi girin. <span class="code">UserID</span> otomatik atanır.</p>
+
+    <form id="signupForm" novalidate>
+        <label for="role">Rol</label>
+        <select id="role" name="role" required>
+            <option value="Employee" selected>Employee</option>
+            <option value="Admin">Admin</option>
+        </select>
+
+        <div class="row">
+            <div>
+                <label for="firstName">Ad</label>
+                <input id="firstName" name="firstName" type="text" required placeholder="Örn: Ali" />
+            </div>
+            <div>
+                <label for="lastName">Soyad</label>
+                <input id="lastName" name="lastName" type="text" required placeholder="Örn: Yılmaz" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label for="email">E-posta</label>
+                <input id="email" name="email" type="email" required placeholder="ali@example.com" />
+            </div>
+            <div>
+                <label for="phoneNumber">Telefon (opsiyonel)</label>
+                <input id="phoneNumber" name="phoneNumber" type="tel" placeholder="+90 5xx xxx xx xx" />
+            </div>
+        </div>
+
+        <label for="departmentId">Departman ID (opsiyonel)</label>
+        <input id="departmentId" name="departmentId" type="number" min="1" placeholder="Boş bırakabilirsiniz" />
+
+        <div class="row">
+            <div class="rel">
+                <label for="password">Şifre</label>
+                <input id="password" name="password" type="password" required
+                       placeholder="En az 8 karakter, 1 büyük ve 1 küçük harf" />
+                <button type="button" id="togglePwd" class="rightbtn">Göster</button>
+                <div class="hint">Kural: <code>(?=.*[a-z])(?=.*[A-Z]).{8,}</code></div>
+            </div>
+            <div>
+                <label for="password2">Şifre (Tekrar)</label>
+                <input id="password2" type="password" required placeholder="Şifreyi doğrulayın" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="rel">
+                <label for="userId">UserID (10 haneli, otomatik)</label>
+                <input id="userId" name="userId" type="text" readonly />
+                <button type="button" id="regen" class="rightbtn">Yenile</button>
+                <div class="hint">Kayıtta bu değer gönderilir.</div>
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button id="submitBtn" type="submit" class="btn">Kaydı Tamamla</button>
+            </div>
+        </div>
+
+        <div id="msg" class="status" style="display:none;"></div>
+    </form>
+
+    <p class="hint" style="margin-top:12px;">
+        Zaten hesabın var mı? <a href="/Auth/Login" style="color:#93c5fd;">Giriş yap</a>.
+    </p>
+</section>
+
+<script>
+    // === Uç noktalar (rol seçimine göre) ===
+    const ENDPOINTS = {
+        registerEmployee: "/api/auth/register/employee",
+        registerAdmin: "/api/auth/register/admin" // Eğer yoksa backend’de ekleyin ya da tek bir endpoint’e role ile gönderin.
+    };
+
+    const form  = document.getElementById('signupForm');
+    const msg   = document.getElementById('msg');
+    const btn   = document.getElementById('submitBtn');
+    const pwd   = document.getElementById('password');
+    const pwd2  = document.getElementById('password2');
+    const role  = document.getElementById('role');
+    const userIdInput = document.getElementById('userId');
+    const regenBtn = document.getElementById('regen');
+    const togglePwd = document.getElementById('togglePwd');
+
+    function showMessage(text, ok=false) {
+        msg.style.display = 'block';
+        msg.textContent = text;
+        msg.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+    function clearMessage(){ msg.style.display='none'; msg.textContent=''; msg.className='status'; }
+
+    // 10 haneli (1000000000-9999999999) UserID üret
+    function generateUserId() {
+        const min = 1000000000; // 10 haneli
+        const max = 9999999999;
+        // Güçlü RNG
+        const a = new Uint32Array(1);
+        crypto.getRandomValues(a);
+        const r = a[0] / 0xFFFFFFFF;
+        return Math.floor(min + r * (max - min));
+    }
+    function setNewUserId() { userIdInput.value = String(generateUserId()); }
+
+    // İlk yüklemede bir UserID ata
+    setNewUserId();
+    regenBtn.addEventListener('click', setNewUserId);
+
+    // Şifre göster/gizle
+    togglePwd.addEventListener('click', () => {
+        const t = pwd.type === 'password' ? 'text' : 'password';
+        pwd.type = t;
+        togglePwd.textContent = t === 'password' ? 'Göster' : 'Gizle';
+    });
+
+    // Şifre kuralı: en az 8, bir büyük ve bir küçük harf
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearMessage();
+
+        // Basit doğrulamalar
+        if (!['Admin','Employee'].includes(role.value)) {
+            showMessage('Lütfen rol seçin.'); return;
+        }
+        if (!passRegex.test(pwd.value)) {
+            showMessage('Şifre en az 8 karakter olmalı ve en az bir büyük + bir küçük harf içermelidir.');
+            return;
+        }
+        if (pwd.value !== pwd2.value) {
+            showMessage('Şifreler eşleşmiyor.'); return;
+        }
+        if (!/^\d{10}$/.test(userIdInput.value)) {
+            showMessage('UserID 10 haneli olmalıdır.'); return;
+        }
+
+        // Opsiyonel alanlar: departmentId, phoneNumber
+        const deptRaw = document.getElementById('departmentId').value.trim();
+        const phoneRaw = document.getElementById('phoneNumber').value.trim();
+
+        const payload = {
+            // Zorunlu alanlar
+            userId: Number(userIdInput.value), // numeric(10,0) ile uyumlu
+            role: role.value,                  // "Admin" | "Employee"
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: pwd.value,
+
+            // Opsiyoneller
+            phoneNumber: phoneRaw || null,
+            departmentId: deptRaw ? Number(deptRaw) : null
+        };
+
+        // Hangi endpoint?
+        const url = (role.value === 'Admin') ? ENDPOINTS.registerAdmin : ENDPOINTS.registerEmployee;
+
+        btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                showMessage('Kayıt tamamlandı! Giriş sayfasına yönlendiriliyorsunuz...', true);
+                setTimeout(() => window.location.href = '/Auth/Login', 900);
+            } else if (res.status === 400) {
+                const data = await res.json().catch(() => ({}));
+                showMessage(data?.code ? `Hata: ${data.code}` : 'Geçersiz istek. Alanları kontrol edin.');
+            } else if (res.status === 409) {
+                showMessage('Bu kullanıcı zaten kayıtlı görünüyor.');
+            } else {
+                const text = await res.text().catch(()=>'');
+                showMessage('Beklenmeyen bir hata oluştu. ' + (text || ''));
+            }
+        } catch (err) {
+            showMessage('Sunucuya ulaşılamadı. İnternet/bağlantı ayarlarını kontrol edin.');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Kaydı Tamamla';
+        }
+    });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,212 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Giriş";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>@ViewData["Title"] - Kablo Stok Takip Sistemi</title>
+    <style>
+        :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+        body { margin:0; background:#0f172a; color:#e2e8f0; display:grid; place-items:center; min-height:100vh; }
+        .card { width:380px; background:#111827; padding:24px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+        h1 { margin:0 0 6px; font-size:22px; }
+        .muted { color:#94a3b8; margin-bottom:18px; font-size:14px; }
+        label { display:block; font-size:14px; margin:12px 0 6px; }
+        input, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
+        input:focus, select:focus { outline:none; border-color:#60a5fa; }
+        .btn { width:100%; margin-top:14px; padding:10px 12px; border-radius:10px; border:0; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
+        .btn:disabled { opacity:.6; cursor:not-allowed; }
+        .hidden { display:none; }
+        .status { margin-top:12px; font-size:13px; padding:10px; border-radius:10px; }
+        .ok { background:#052e16; color:#86efac; border:1px solid #14532d; }
+        .err { background:#3f1d20; color:#fecaca; border:1px solid #7f1d1d; }
+        .row { display:flex; gap:10px; align-items:center; justify-content:space-between; }
+        .right { font-size:12px; color:#94a3b8; cursor:pointer; user-select:none; }
+        .hint { font-size:12px; color:#64748b; margin-top:6px; }
+        .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:#cbd5e1;}
+        .link { color:#93c5fd; text-decoration:underline; cursor:pointer; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Giriş yap</h1>
+    <div class="muted">Rol seç, bilgileri gir ve kimliğini doğrula.</div>
+
+    <form id="loginForm" novalidate>
+        <label for="role">Rol</label>
+        <select id="role" name="role" aria-label="Rol">
+            <option value="Admin" selected>Admin</option>
+            <option value="Employee">Personel</option>
+        </select>
+
+        <div id="adminFields">
+            <label for="username">Kullanıcı Adı (Admin)</label>
+            <input id="username" name="username" autocomplete="username" />
+        </div>
+
+        <div id="employeeFields" class="hidden">
+            <label for="employeeId">Sicil No (5 hane)</label>
+            <input id="employeeId" name="employeeId" inputmode="numeric" pattern="\\d{5}" />
+            <div class="hint">Örnek: 01234</div>
+        </div>
+
+        <div class="row">
+            <label for="password" style="margin:12px 0 6px;">Şifre</label>
+            <span id="togglePwd" class="right" tabindex="0" role="button" aria-controls="password">Göster</span>
+        </div>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+        <button class="btn" id="submitBtn" type="submit">Giriş yap</button>
+
+        <div id="status" class="status hidden" role="alert" aria-live="polite"></div>
+
+        <div class="hint" style="margin-top:10px">
+            API: <span class="code" id="apiEcho"></span>
+        </div>
+        <div class="hint">
+        </div>
+    </form>
+
+    <div id="meBox" class="status hidden ok" style="margin-top:12px"></div>
+</div>
+
+<script>
+    // === Uç noktalar (AuthController) ===
+    const ENDPOINTS = {
+        admin: "/api/auth/login/admin",
+        employee: "/api/auth/login/employee",
+        me: "/api/auth/me"
+    };
+    document.getElementById("apiEcho").textContent =
+        `${ENDPOINTS.admin} | ${ENDPOINTS.employee}`;
+
+    // === Yardımcılar ===
+    const qs  = (sel) => document.querySelector(sel);
+    const qsb = (sel) => document.querySelector(sel).classList;
+    const hide = (id, val) => qs(id).classList.toggle("hidden", val);
+    const setStatus = (msg, ok=false) => {
+        const el = qs("#status");
+        el.textContent = msg;
+        el.className = "status " + (ok ? "ok" : "err");
+        hide("#status", false);
+    };
+    const clearStatus = () => {
+        const el = qs("#status");
+        el.textContent = "";
+        el.className = "status hidden";
+        hide("#meBox", true);
+    };
+    const guid = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+        const r = Math.random()*16|0, v = c==="x"?r:(r&0x3|0x8); return v.toString(16);
+    });
+    const extractToken = (obj) => obj?.token ?? obj?.accessToken ?? obj?.jwt ?? obj?.bearer ?? null;
+
+    // === Rol alanları ===
+    const roleSel = qs("#role");
+    roleSel.addEventListener("change", () => {
+        const isAdmin = roleSel.value === "Admin";
+        hide("#adminFields", !isAdmin);
+        hide("#employeeFields", isAdmin);
+        clearStatus();
+    });
+
+    // === Şifre göster/gizle ===
+    const pwd = qs("#password");
+    const toggle = qs("#togglePwd");
+    const togglePwd = () => {
+        pwd.type = pwd.type === "password" ? "text" : "password";
+        toggle.textContent = pwd.type === "password" ? "Göster" : "Gizle";
+    };
+    toggle.addEventListener("click", togglePwd);
+    toggle.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") togglePwd(); });
+
+    // === Form submit ===
+    const form = qs("#loginForm");
+    const btn  = qs("#submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearStatus();
+        btn.disabled = true;
+
+        const isAdmin = roleSel.value === "Admin";
+        const url = isAdmin ? ENDPOINTS.admin : ENDPOINTS.employee;
+
+        // İstek gövdesi: .NET varsayılan JSON binder'ı case-insensitive.
+        const body = isAdmin
+            ? { username: qs("#username").value?.trim(), password: pwd.value }
+            : { employeeId: qs("#employeeId").value?.trim(), password: pwd.value };
+
+        // Basit validasyon
+        if (isAdmin && !body.username) {
+            setStatus("Lütfen kullanıcı adını girin.");
+            btn.disabled = false; return;
+        }
+        if (!isAdmin && !/^[0-9]{5}$/.test(body.employeeId || "")) {
+            setStatus("Sicil numarası 5 haneli olmalıdır.");
+            btn.disabled = false; return;
+        }
+        if (!body.password) {
+            setStatus("Lütfen şifreyi girin.");
+            btn.disabled = false; return;
+        }
+
+        // Correlation ID (middleware ile uyumlu)
+        const cid = guid();
+
+        try {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Correlation-ID": cid
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (res.status === 200) {
+                const json = await res.json().catch(() => ({}));
+                // Tüm yanıtı sakla; ayrıca token varsa ayrı kaydet
+                localStorage.setItem("authResponse", JSON.stringify(json));
+                const token = extractToken(json);
+                if (token) localStorage.setItem("token", token);
+
+                setStatus("Giriş başarılı. Profil doğrulanıyor…", true);
+
+                // Hemen /me ile test et
+                const meRes = await fetch(ENDPOINTS.me, {
+                    headers: token ? { "Authorization": `Bearer ${token}` } : {}
+                });
+
+                if (meRes.ok) {
+                    const me = await meRes.json();
+                    const box = qs("#meBox");
+                    box.textContent = `Hoş geldin ${me?.name ?? ""} (Rol: ${me?.role ?? "?"})`;
+                    hide("#meBox", false);
+                    setStatus("Giriş tamamlandı.", true);
+                    // İstersen burada yönlendirme yap:
+                    // window.location.href = "/";
+                } else {
+                    setStatus("Giriş başarılı ancak profil alınamadı. Yetki başlığı kontrol edin.", false);
+                }
+            } else if (res.status === 401) {
+                setStatus("Yetkisiz: Kimlik bilgileri hatalı.", false);
+            } else if (res.status === 400) {
+                const err = await res.text();
+                setStatus("Geçersiz istek: " + (err || "Doğrulama hatası."), false);
+            } else {
+                const errText = await res.text();
+                setStatus(`Beklenmeyen durum (${res.status}). ${errText}`, false);
+            }
+        } catch (ex) {
+            setStatus("Ağ/istemci hatası: " + (ex?.message || ex), false);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

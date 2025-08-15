@@ -14,7 +14,7 @@ using NLog.Web;
 
 var contentRoot = Directory.GetCurrentDirectory();
 
-// NLog: Configuration/nlog.config
+// NLog
 var nlogPath1 = Path.Combine(contentRoot, "Configuration", "nlog.config");
 if (File.Exists(nlogPath1))
     LogManager.Setup().LoadConfigurationFromFile(nlogPath1);
@@ -38,12 +38,12 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 // AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Controllers + JSON
-builder.Services.AddControllers()
+// ⬇️ Burayı değiştiriyoruz: Views için MVC eklensin
+builder.Services.AddControllersWithViews()
     .AddJsonOptions(o =>
     {
         o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -52,10 +52,7 @@ builder.Services.AddSwaggerGen();
 // CORS
 builder.Services.AddCors(opt =>
 {
-    opt.AddPolicy("AllowAll", p => p
-        .AllowAnyOrigin()
-        .AllowAnyHeader()
-        .AllowAnyMethod());
+    opt.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
 // SMTP + Email
@@ -105,7 +102,7 @@ builder.Services.AddResponseCompression();
 
 var app = builder.Build();
 
-// Swagger (sadece Development)
+// Swagger (Development)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -116,10 +113,8 @@ else
     app.UseHsts();
 }
 
-// Global exception -> NLog
+// Middlewares
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
-// Request/Response logging (isteğe bağlı, varsa projende)
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 app.UseHttpsRedirection();
@@ -129,13 +124,22 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SQL SESSION_CONTEXT için (UserID claim’inden yazar) — Auth’tan sonra
+// SQL SESSION_CONTEXT (UserID yazımı) — Auth’tan sonra
 app.UseMiddleware<SessionContextMiddleware>();
 
+// ⬇️ Statik dosyalar (wwwroot) ve MVC route'ları
+app.UseStaticFiles();
+
+// API controller’lar (mevcut hali kalsın)
 app.MapControllers();
+
+// ⬇️ Views için default rota: "/" -> Home/Index
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}"
+);
 
 // NLog flush
 app.Lifetime.ApplicationStopped.Register(LogManager.Shutdown);
 
 app.Run();
-
