@@ -1,0 +1,33 @@
+2025-08-11 14:21:18.8499 | ERROR | KabloStokTakipSistemi.Program | Program başlatılırken fatal bir hata oluştu System.InvalidOperationException: Error while validating the service descriptor 'ServiceType: KabloStokTakipSistemi.Services.Implementations.LogService Lifetime: Scoped ImplementationType: KabloStokTakipSistemi.Services.Implementations.LogService': Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContext' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.LogService'.
+ ---> System.InvalidOperationException: Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContext' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.LogService'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain, ParameterInfo[] parameters, Boolean throwIfCallSiteNotFound)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateConstructorCallSite(ResultCache lifetime, ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, Int32 slot)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   --- End of inner exception stack trace ---
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider..ctor(ICollection`1 serviceDescriptors, ServiceProviderOptions options)
+2025-08-11 17:09:22.1768 | ERROR | KabloStokTakipSistemi.Program | Program başlatılırken fatal bir hata oluştu System.AggregateException: Some services are not able to be constructed (Error while validating the service descriptor 'ServiceType: KabloStokTakipSistemi.Services.Implementations.AlertService Lifetime: Scoped ImplementationType: KabloStokTakipSistemi.Services.Implementations.AlertService': Unable to resolve service for type 'KabloStokTakipSistemi.Services.Interfaces.IEmailService' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.AlertService'.) (Error while validating the service descriptor 'ServiceType: KabloStokTakipSistemi.Services.Implementations.LogService Lifetime: Scoped ImplementationType: KabloStokTakipSistemi.Services.Implementations.LogService': Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContext' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.LogService'.)
+ ---> System.InvalidOperationException: Error while validating the service descriptor 'ServiceType: KabloStokTakipSistemi.Services.Implementations.AlertService Lifetime: Scoped ImplementationType: KabloStokTakipSistemi.Services.Implementations.AlertService': Unable to resolve service for type 'KabloStokTakipSistemi.Services.Interfaces.IEmailService' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.AlertService'.
+ ---> System.InvalidOperationException: Unable to resolve service for type 'KabloStokTakipSistemi.Services.Interfaces.IEmailService' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.AlertService'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain, ParameterInfo[] parameters, Boolean throwIfCallSiteNotFound)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateConstructorCallSite(ResultCache lifetime, ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, Int32 slot)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   --- End of inner exception stack trace ---
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider..ctor(ICollection`1 serviceDescriptors, ServiceProviderOptions options)
+   --- End of inner exception stack trace ---
+ ---> (Inner Exception #1) System.InvalidOperationException: Error while validating the service descriptor 'ServiceType: KabloStokTakipSistemi.Services.Implementations.LogService Lifetime: Scoped ImplementationType: KabloStokTakipSistemi.Services.Implementations.LogService': Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContext' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.LogService'.
+ ---> System.InvalidOperationException: Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContext' while attempting to activate 'KabloStokTakipSistemi.Services.Implementations.LogService'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain, ParameterInfo[] parameters, Boolean throwIfCallSiteNotFound)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateConstructorCallSite(ResultCache lifetime, ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, Int32 slot)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   --- End of inner exception stack trace ---
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.ValidateService(ServiceDescriptor descriptor)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider..ctor(ICollection`1 serviceDescriptors, ServiceProviderOptions options)<---
+
