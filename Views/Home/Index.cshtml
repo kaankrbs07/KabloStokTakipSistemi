@@ -38,7 +38,7 @@
 
     <div id="autoBox" style="margin-top:18px;">
         <div class="hint">
-            <span id="msg">2 saniye içinde <code>/Auth/Login</code> sayfasına yönlendirileceksiniz…</span>
+            <span id="msg">10 saniye içinde <code>/Auth/Login</code> sayfasına yönlendirileceksiniz…</span>
             <button id="cancel" style="margin-left:8px; background:transparent; border:1px solid #334155; color:#cbd5e1; padding:6px 10px; border-radius:8px; cursor:pointer;">
                 İptal
             </button>
@@ -61,7 +61,7 @@
     document.getElementById("msg").innerHTML = `2 saniye içinde <code>${target}</code> sayfasına yönlendirileceksiniz…`;
 
     // 2 saniyelik geri sayım + ilerleme çubuğu
-    let elapsed = 0, total = 2000, step = 50;
+    let elapsed = 0, total = 10000, step = 50;
     const fill = document.getElementById("fill");
     const timer = setInterval(() => {
         elapsed += step;

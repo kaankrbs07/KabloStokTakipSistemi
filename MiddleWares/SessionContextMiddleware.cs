@@ -17,25 +17,25 @@ public class SessionContextMiddleware
 
     public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
     {
-        var userIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier);
+        // 1) Actor UserID: kimlik varsa claim'den; yoksa 0 (SYSTEM)
+        var userIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var actorId = long.TryParse(userIdClaim, out var uid) ? uid : 0L;
 
-        if (userIdClaim != null && long.TryParse(userIdClaim.Value, out var userId))
+        // 2) CorrelationId: mevcut traceId ya da yeni guid
+        var correlationId = context.TraceIdentifier ?? Guid.NewGuid().ToString("N");
+
+        try
         {
-            try
-            {
-                await dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_set_session_context N'UserID', {0}", userId);
+            // İki değeri de SQL oturumuna yaz
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "EXEC sp_set_session_context N'UserID', {0}; EXEC sp_set_session_context N'CorrelationId', {1};",
+                actorId, correlationId);
 
-                _logger.LogInformation("SESSION_CONTEXT set: UserID = {UserID}", userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SESSION_CONTEXT ayarlanırken hata oluştu. UserID = {UserID}", userId);
-            }
+            _logger.LogInformation("SESSION_CONTEXT set: UserID={UserID}, CorrelationId={CorrelationId}", actorId, correlationId);
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogWarning("SESSION_CONTEXT ayarlanamadı. Geçerli UserID bulunamadı.");
+            _logger.LogError(ex, "SESSION_CONTEXT ayarlanırken hata oluştu. UserID={UserID}", actorId);
         }
 
         await _next(context);

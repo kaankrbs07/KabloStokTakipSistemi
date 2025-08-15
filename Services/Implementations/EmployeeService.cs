@@ -1,27 +1,24 @@
-﻿// Services/EmployeeService.cs
+﻿using System.Data;
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
+using KabloStokTakipSistemi.Middlewares; // AppException/AppErrors
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace KabloStokTakipSistemi.Services.Implementations;
 
-public class EmployeeService : IEmployeeService
+public sealed class EmployeeService : IEmployeeService
 {
     private readonly AppDbContext _context;
 
-    public EmployeeService(AppDbContext context, ILogger<EmployeeService> _ /*logger enjekte edilebilir*/)
-    {
-        _context = context;
-    }
+    // ILogger kaldırıldı — merkezi NLog + middleware kullanılıyor
+    public EmployeeService(AppDbContext context) => _context = context;
 
     public async Task<IEnumerable<GetEmployeeDto>> GetAllEmployeesAsync()
     {
         var list = await _context.Employees
-            .Include(e => e.User)
-            .ThenInclude(u => u!.Department)
+            .Include(e => e.User)!.ThenInclude(u => u!.Department)
             .AsNoTracking()
             .ToListAsync();
 
@@ -36,47 +33,59 @@ public class EmployeeService : IEmployeeService
     public async Task<GetEmployeeDto?> GetEmployeeByIdAsync(long employeeId)
     {
         var e = await _context.Employees
-            .Include(x => x.User)
-            .ThenInclude(u => u!.Department)
+            .Include(x => x.User)!.ThenInclude(u => u!.Department)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.EmployeeID == employeeId);
 
-        return e is null
-            ? null
-            : new GetEmployeeDto(
-                e.EmployeeID,
-                e.User?.FirstName,
-                e.User?.LastName,
-                e.User?.Department?.DepartmentName
-            );
+        return e is null ? null : new GetEmployeeDto(
+            e.EmployeeID,
+            e.User?.FirstName,
+            e.User?.LastName,
+            e.User?.Department?.DepartmentName
+        );
     }
 
-    // Not: sp_CreateUser, Role='Employee' geldiğinde Employees tablosuna da INSERT etmeli.
     public async Task<bool> CreateEmployeeAsync(CreateEmployeeDto dto)
     {
-        await using var tx = await _context.Database.BeginTransactionAsync();
+        if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+        // Department kontrolü (varsa)
+        if (dto.DepartmentID.HasValue)
+        {
+            var deptExists = await _context.Departments.AsNoTracking()
+                .AnyAsync(d => d.DepartmentID == dto.DepartmentID.Value);
+            if (!deptExists)
+                throw new AppException(AppErrors.Validation.BadRequest, "Geçersiz DepartmentID.");
+        }
+
+        // Aynı UserID var mı?
+        var userExists = await _context.Users.AsNoTracking()
+            .AnyAsync(u => u.UserID == dto.UserID);
+        if (userExists)
+            throw new AppException(AppErrors.Common.Conflict, "Bu UserID zaten mevcut.");
+
+        await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
         try
         {
-            var p = new[]
+            // Kullanıcı oluştur (düz metin parola)
+            var user = new User
             {
-                new SqlParameter("@UserID", dto.UserID),
-                new SqlParameter("@FirstName", (object?)dto.FirstName ?? DBNull.Value),
-                new SqlParameter("@LastName", (object?)dto.LastName ?? DBNull.Value),
-                new SqlParameter("@Email", (object?)dto.Email ?? DBNull.Value),
-                new SqlParameter("@PhoneNumber", (object?)dto.PhoneNumber ?? DBNull.Value),
-                new SqlParameter("@DepartmentID", (object?)dto.DepartmentID ?? DBNull.Value),
-                new SqlParameter("@Role", "Employee"),
-                new SqlParameter("@IsActive", true),
-                new SqlParameter("@Password", dto.Password),
-                new SqlParameter("@AdminUsername", DBNull.Value),
-                new SqlParameter("@AdminDepartmentName", DBNull.Value)
+                UserID = dto.UserID,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                PhoneNumber = dto.PhoneNumber,
+                DepartmentID = dto.DepartmentID,
+                Role = "Employee",
+                IsActive = true,
+                Password = dto.Password
             };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC dbo.sp_CreateUser @UserID, @FirstName, @LastName, @Email, @PhoneNumber, " +
-                "@DepartmentID, @Role, @IsActive, @Password, @AdminUsername, @AdminDepartmentName",
-                p
-            );
+            // Employee kaydı
+            _context.Employees.Add(new Employee { UserID = user.UserID });
+            await _context.SaveChangesAsync();
 
             await tx.CommitAsync();
             return true;
@@ -84,44 +93,26 @@ public class EmployeeService : IEmployeeService
         catch
         {
             await tx.RollbackAsync();
-            throw; // Middleware 5xx + hata kodu dönecek, NLog Error yazacak
+            throw;
         }
     }
 
-    // Department'ı Users tablosunda değiştiriyoruz (Employee->User join)
+    // Department'ı Users tablosunda güncelle
     public async Task<bool> UpdateEmployeeDepartmentAsync(long employeeId, int newDepartmentId)
     {
         // 1) Department var mı?
         var deptExists = await _context.Departments
             .AsNoTracking()
             .AnyAsync(d => d.DepartmentID == newDepartmentId);
-
         if (!deptExists) return false;
 
-        // 2) Employee var mı?
+        // 2) Employee + User yükle (tracking)
         var emp = await _context.Employees
-            .AsNoTracking()
+            .Include(e => e.User)
             .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
+        if (emp is null || emp.User is null) return false;
 
-        if (emp is null) return false;
-
-        var p = new[]
-        {
-            new SqlParameter("@UserID", emp.UserID),
-            new SqlParameter("@FirstName", DBNull.Value),
-            new SqlParameter("@LastName", DBNull.Value),
-            new SqlParameter("@Email", DBNull.Value),
-            new SqlParameter("@PhoneNumber", DBNull.Value),
-            new SqlParameter("@DepartmentID", newDepartmentId),
-            new SqlParameter("@IsActive", DBNull.Value),
-            new SqlParameter("@Role", DBNull.Value),
-            new SqlParameter("@Password", DBNull.Value)
-        };
-
-        await _context.Database.ExecuteSqlRawAsync(
-            "EXEC dbo.sp_UpdateUsers @UserID, @FirstName, @LastName, @Email, @PhoneNumber, @DepartmentID, @IsActive, @Role, @Password",
-            p);
-
-        return true;
+        emp.User.DepartmentID = newDepartmentId;
+        return await _context.SaveChangesAsync() > 0;
     }
 }

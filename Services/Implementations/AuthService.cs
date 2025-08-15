@@ -5,7 +5,6 @@ using KabloStokTakipSistemi.Configuration;
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
 using KabloStokTakipSistemi.Middlewares;
-using KabloStokTakipSistemi.Security;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -19,7 +18,8 @@ public sealed class AuthService : IAuthService
     private readonly JwtOptions _jwt;
     private readonly IUserService _users;
 
-    public AuthService(AppDbContext db, IOptions<JwtOptions> jwt, IUserService users /*ILogger<AuthService> _unused*/)
+    // ILogger kaldırıldı — merkezi NLog + middleware kullanılıyor
+    public AuthService(AppDbContext db, IOptions<JwtOptions> jwt, IUserService users)
     {
         _db = db;
         _jwt = jwt.Value;
@@ -29,12 +29,12 @@ public sealed class AuthService : IAuthService
     // ---- LOGIN (Admin) ----
     public async Task<TokenResponse?> LoginAdminAsync(LoginAdminRequest req, CancellationToken ct = default)
     {
-        // Admin tablosundan username ile çek, User join'i üzerinden güvenlik alanlarını al
         var row = await _db.Admins
             .Include(a => a.User)
             .AsNoTracking()
             .Where(a => a.Username == req.Username)
-            .Select(a => new {
+            .Select(a => new
+            {
                 a.UserID,
                 Password = a.User!.Password,
                 IsActive = a.User!.IsActive,
@@ -44,7 +44,10 @@ public sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(ct);
 
         if (row is null || !row.IsActive) return null;
-        if (!PasswordHasher.Verify(req.Password, row.Password)) return null;
+
+        // DÜZ METİN KARŞILAŞTIRMA (geçici)
+        if (!string.Equals(req.Password, row.Password, StringComparison.Ordinal))
+            return null;
 
         return CreateToken(row.UserID, row.Role, row.FullName);
     }
@@ -56,7 +59,8 @@ public sealed class AuthService : IAuthService
             .Include(e => e.User)
             .AsNoTracking()
             .Where(e => e.EmployeeID == req.EmployeeID)
-            .Select(e => new {
+            .Select(e => new
+            {
                 e.UserID,
                 Password = e.User!.Password,
                 IsActive = e.User!.IsActive,
@@ -66,7 +70,10 @@ public sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(ct);
 
         if (row is null || !row.IsActive) return null;
-        if (!PasswordHasher.Verify(req.Password, row.Password)) return null;
+
+        // DÜZ METİN KARŞILAŞTIRMA (geçici)
+        if (!string.Equals(req.Password, row.Password, StringComparison.Ordinal))
+            return null;
 
         return CreateToken(row.UserID, row.Role, row.FullName);
     }
@@ -74,25 +81,20 @@ public sealed class AuthService : IAuthService
     // ---- REGISTER (Employee) ----
     public async Task<bool> RegisterEmployeeAsync(RegisterEmployeeRequest req, CancellationToken ct = default)
     {
-        // Basit parola politikası: ≥8, en az bir küçük ve bir büyük harf
-        if (!PasswordPolicy.IsValid(req.Password))
-            throw new AppException(AppErrors.Validation.BadRequest, "Şifre en az 8 karakter olmalı ve büyük/küçük harf içermelidir.");
-
-        var hashed = PasswordHasher.Hash(req.Password);
-
+        // Şifre policy + hash YOK — düz metin yazılıyor (debug amacıyla)
         var dto = new CreateUserDto(
             req.UserID,
             req.FirstName, req.LastName,
             req.Email, req.PhoneNumber,
             req.DepartmentID,
-            Role: "Employee", //Default olarak Employee
+            Role: "Employee",
             IsActive: true,
-            Password: hashed,
+            Password: req.Password,              // <-- düz metin
             AdminUsername: null,
             AdminDepartmentName: null
         );
 
-        // sp_CreateUser üzerinden kullanıcı + (role=Employee ise) Employees insert’i yapılır
+        // EF Core UserService çağrısı (SP yok)
         return await _users.CreateUserAsync(dto);
     }
 
@@ -102,7 +104,7 @@ public sealed class AuthService : IAuthService
         var now = DateTime.UtcNow;
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()), // SESSION_CONTEXT için şart
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, role),
             new Claim(ClaimTypes.Name, fullName ?? string.Empty)
         };
