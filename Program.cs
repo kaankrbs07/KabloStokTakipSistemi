@@ -130,7 +130,7 @@ app.UseMiddleware<SessionContextMiddleware>();
 // ⬇️ Statik dosyalar (wwwroot) ve MVC route'ları
 app.UseStaticFiles();
 
-// API controller’lar (mevcut hali kalsın)
+// API controller’lar 
 app.MapControllers();
 
 // ⬇️ Views için default rota: "/" -> Home/Index

@@ -1,223 +1,342 @@
 ﻿@{
-    Layout = null;
     ViewData["Title"] = "Kayıt Ol";
+    Layout = null;
 }
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>@ViewData["Title"] - Kablo Stok Takip Sistemi</title>
-    <style>
-        :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-        body { margin:0; background:#0f172a; color:#e2e8f0; display:grid; place-items:center; min-height:100vh; }
-        .card { width: 560px; background:#111827; padding:24px; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-        h1 { margin:0 0 8px; font-size:22px; }
-        .muted { color:#94a3b8; margin-bottom:18px; font-size:14px; }
-        label { display:block; font-size:14px; margin:12px 0 6px; }
-        input, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
-        input:focus, select:focus { outline:none; border-color:#60a5fa; }
-        .row { display:grid; gap:12px; grid-template-columns:1fr 1fr; }
-        .btn { width:100%; margin-top:14px; padding:10px 12px; border-radius:10px; border:0; background:#2563eb; color:white; font-weight:600; cursor:pointer; }
-        .btn:disabled { opacity:.6; cursor:not-allowed; }
-        .status { margin-top:12px; font-size:13px; padding:10px; border-radius:10px; }
-        .ok { background:#052e16; color:#86efac; border:1px solid #14532d; }
-        .err { background:#3f1d20; color:#fecaca; border:1px solid #7f1d1d; }
-        .hint { font-size:12px; color:#64748b; margin-top:6px; }
-        .rightbtn { position:absolute; right:8px; top:34px; border:1px solid #334155; background:#0b1220; color:#cbd5e1; padding:4px 8px; border-radius:8px; cursor:pointer; }
-        .rel { position:relative; }
-        .code { font-family: ui-monospace, Menlo, Consolas, monospace; color:#cbd5e1; }
-    </style>
-</head>
-<body>
-<section class="card">
-    <h1>Kayıt Ol</h1>
-    <p class="muted">Bilgilerinizi girin. <span class="code">UserID</span> otomatik atanır.</p>
+<style>
+  /* Arkaplan ve kart */
+  .auth-bg {
+    min-height: 100vh;
+    background: radial-gradient(1200px 600px at 100% -10%, #5b8def22, transparent 60%),
+                radial-gradient(900px 500px at -10% 100%, #7bdcb522, transparent 60%),
+                linear-gradient(135deg, #0f172a, #111827);
+    display:flex; align-items:center; justify-content:center; padding:32px 12px;
+  }
+  .glass-card {
+    max-width: 920px; width:100%;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    color: #e5e7eb;
+  }
+  .glass-card .form-control, .glass-card .form-select {
+    background: rgba(255,255,255,0.08)!important; color:#e5e7eb;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .glass-card .form-control::placeholder { color:#94a3b8; }
+  .glass-card .form-control:focus, .glass-card .form-select:focus {
+    border-color:#60a5fa; box-shadow: 0 0 0 .2rem rgba(96,165,250,.25);
+  }
+  .brand-chip {
+    display:inline-flex; align-items:center; gap:10px;
+    padding:10px 14px; border-radius:12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .role-tabs .nav-link {
+    color:#cbd5e1; border:1px solid rgba(255,255,255,0.12);
+    margin-right:8px; border-radius:9999px; padding:.5rem 1rem;
+    backdrop-filter: blur(8px);
+  }
+  .role-tabs .nav-link.active {
+    color:#0b1220; background: #93c5fd; border-color:#93c5fd;
+    font-weight:600;
+  }
+  .muted { color:#9aa6b2; }
+  .required-star::after{ content:" *"; color:#f87171; }
+  .btn-gradient {
+    background: linear-gradient(135deg, #60a5fa, #34d399);
+    border:0; color:#0b1220; font-weight:600;
+  }
+  .btn-gradient:disabled { filter: grayscale(.4) opacity(.7); }
+  /* Toast */
+  .toast-wrap { position: fixed; right: 18px; bottom: 18px; z-index: 2000; }
+</style>
 
-    <form id="signupForm" novalidate>
-        <label for="role">Rol</label>
-        <select id="role" name="role" required>
-            <option value="Employee" selected>Employee</option>
-            <option value="Admin">Admin</option>
+<div class="auth-bg">
+  <div class="glass-card p-4 p-md-5">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <div class="brand-chip">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="#93c5fd" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="fw-bold">Kablo Stok Takip Sistemi</div>
+          <div class="small muted">Güvenli kayıt</div>
+        </div>
+      </div>
+      <div class="muted small mt-3 mt-md-0">Zaten hesabın var mı? <a class="link-light" href="/Auth/Login">Giriş yap</a></div>
+    </div>
+
+    <!-- Rol sekmeleri -->
+    <ul class="nav role-tabs mb-4" id="roleTabs" role="tablist" style="gap:6px;">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-emp" data-role="Employee" type="button">Employee</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-adm" data-role="Admin" type="button">Admin</button>
+      </li>
+    </ul>
+
+    <form id="signupForm" novalidate autocomplete="off">
+      <input id="role" type="hidden" value="Employee"/>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="firstName" class="form-label required-star">Ad</label>
+          <input id="firstName" name="firstName" class="form-control" maxlength="50" required placeholder="Enes">
+          <div class="invalid-feedback">Ad zorunludur.</div>
+        </div>
+        <div class="col-md-6">
+          <label for="lastName" class="form-label required-star">Soyad</label>
+          <input id="lastName" name="lastName" class="form-control" maxlength="50" required placeholder="Karabaş">
+          <div class="invalid-feedback">Soyad zorunludur.</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-6">
+          <label for="email" class="form-label required-star">E-posta</label>
+          <input id="email" name="email" type="email" class="form-control" required maxlength="100" placeholder="ornek@firma.com">
+          <div class="form-text muted">E-posta benzersiz olmalı.</div>
+          <div class="invalid-feedback">Geçerli bir e-posta giriniz.</div>
+        </div>
+        <div class="col-md-6">
+          <label for="phone" class="form-label">Telefon</label>
+          <input id="phone" name="phone" type="tel" class="form-control" maxlength="20" placeholder="05xx xxx xx xx">
+          <div class="form-text muted">Opsiyonel, benzersiz.</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-8 position-relative">
+          <label for="password" class="form-label required-star">Şifre</label>
+          <div class="input-group">
+            <input id="password" name="password" type="password" class="form-control" required minlength="8" placeholder="••••••••" autocomplete="new-password">
+            <button class="btn btn-outline-light" type="button" id="togglePwd" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+          <div class="invalid-feedback">En az 8 karakter olmalı.</div>
+        </div>
+        <div class="col-md-6">
+          <label for="password2" class="form-label required-star">Şifre (Tekrar)</label>
+          <input id="password2" name="password2" type="password" class="form-control" required placeholder="••••••••" autocomplete="new-password">
+          <div class="invalid-feedback">Şifreler uyuşmuyor.</div>
+        </div>
+      </div>
+
+      <!-- Admin alanları -->
+      <div id="adminBlock" class="mt-4 d-none">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="username" class="form-label required-star">Kullanıcı Adı (Admin)</label>
+            <input id="username" name="username" class="form-control" maxlength="50" placeholder="nursan-admin">
+            <div class="invalid-feedback">Kullanıcı adı zorunludur.</div>
+          </div>
+          <div class="col-md-6">
+            <label for="dept" class="form-label required-star">Departman</label>
+            <div class="d-flex gap-2">
+              <select id="dept" class="form-select flex-grow-1">
+                <option value="">Yükleniyor…</option>
+              </select>
+              <div id="deptSpinner" class="d-none align-items-center">
+                <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+              </div>
+            </div>
+            <div id="deptHelp" class="form-text muted">Bir departmanda yalnız bir admin olabilir.</div>
+            <div id="deptError" class="text-danger small d-none">Bu departmanın zaten bir admini var.</div>
+            <div class="invalid-feedback">Departman seçiniz.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employee için opsiyonel departman -->
+      <div id="employeeDeptBlock" class="mt-4">
+        <label for="deptEmp" class="form-label">Departman (opsiyonel)</label>
+        <select id="deptEmp" class="form-select">
+          <option value="">Seçiniz…</option>
         </select>
+        <div class="form-text muted">İsterseniz bir departman seçebilirsiniz.</div>
+      </div>
 
-        <div class="row">
-            <div>
-                <label for="firstName">Ad</label>
-                <input id="firstName" name="firstName" type="text" required placeholder="Örn: Ali" />
-            </div>
-            <div>
-                <label for="lastName">Soyad</label>
-                <input id="lastName" name="lastName" type="text" required placeholder="Örn: Yılmaz" />
-            </div>
-        </div>
-
-        <div class="row">
-            <div>
-                <label for="email">E-posta</label>
-                <input id="email" name="email" type="email" required placeholder="ali@example.com" />
-            </div>
-            <div>
-                <label for="phoneNumber">Telefon (opsiyonel)</label>
-                <input id="phoneNumber" name="phoneNumber" type="tel" placeholder="+90 5xx xxx xx xx" />
-            </div>
-        </div>
-
-        <label for="departmentId">Departman ID (opsiyonel)</label>
-        <input id="departmentId" name="departmentId" type="number" min="1" placeholder="Boş bırakabilirsiniz" />
-
-        <div class="row">
-            <div class="rel">
-                <label for="password">Şifre</label>
-                <input id="password" name="password" type="password" required
-                       placeholder="En az 8 karakter, 1 büyük ve 1 küçük harf" />
-                <button type="button" id="togglePwd" class="rightbtn">Göster</button>
-                <div class="hint">Kural: <code>(?=.*[a-z])(?=.*[A-Z]).{8,}</code></div>
-            </div>
-            <div>
-                <label for="password2">Şifre (Tekrar)</label>
-                <input id="password2" type="password" required placeholder="Şifreyi doğrulayın" />
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="rel">
-                <label for="userId">UserID (10 haneli, otomatik)</label>
-                <input id="userId" name="userId" type="text" readonly />
-                <button type="button" id="regen" class="rightbtn">Yenile</button>
-                <div class="hint">Kayıtta bu değer gönderilir.</div>
-            </div>
-            <div>
-                <label>&nbsp;</label>
-                <button id="submitBtn" type="submit" class="btn">Kaydı Tamamla</button>
-            </div>
-        </div>
-
-        <div id="msg" class="status" style="display:none;"></div>
+      <div class="mt-4 d-flex gap-2">
+        <button id="submitBtn" type="submit" class="btn btn-gradient px-4">
+          <span class="me-2" id="btnText">Kayıt Ol</span>
+          <span class="spinner-border spinner-border-sm d-none" id="btnSpin" role="status" aria-hidden="true"></span>
+        </button>
+        <button type="reset" class="btn btn-outline-light">Temizle</button>
+      </div>
     </form>
+  </div>
+</div>
 
-    <p class="hint" style="margin-top:12px;">
-        Zaten hesabın var mı? <a href="/Auth/Login" style="color:#93c5fd;">Giriş yap</a>.
-    </p>
-</section>
+<div class="toast-wrap">
+  <div class="toast text-bg-dark border-0" id="appToast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toastMsg">Mesaj</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Kapat"></button>
+    </div>
+  </div>
+</div>
 
 <script>
-    // === Uç noktalar (rol seçimine göre) ===
-    const ENDPOINTS = {
-        registerEmployee: "/api/auth/register/employee",
-        registerAdmin: "/api/auth/register/admin" // Eğer yoksa backend’de ekleyin ya da tek bir endpoint’e role ile gönderin.
+(() => {
+  const $ = s => document.querySelector(s);
+  const form = $('#signupForm');
+  const roleHidden = $('#role');
+  const adminBlock = $('#adminBlock');
+  const empBlock = $('#employeeDeptBlock');
+  const tabEmp = $('#tab-emp'); const tabAdm = $('#tab-adm');
+  const username = $('#username');
+  const deptAdmin = $('#dept'); const deptEmp = $('#deptEmp'); const deptErr = $('#deptError'); const deptSpin = $('#deptSpinner');
+  const firstName = $('#firstName'); const lastName = $('#lastName');
+  const email = $('#email'); const phone = $('#phone');
+  const pwd = $('#password'); const pwd2 = $('#password2'); const togglePwd = $('#togglePwd');
+  const btn = $('#submitBtn'); const btnText = $('#btnText'); const btnSpin = $('#btnSpin');
+  const toastEl = $('#appToast'); const toastMsg = $('#toastMsg');
+  let bsToast = null;
+
+  const API = {
+    names: '/api/department/public/names',
+    hasAdmin: '/api/department/has-admin?name=',
+    regEmp: '/api/auth/register/employee',
+    regAdm: '/api/auth/register/admin'
+  };
+
+  function setRole(r){
+    roleHidden.value = r;
+    const isAdmin = r === 'Admin';
+    adminBlock.classList.toggle('d-none', !isAdmin);
+    empBlock.classList.toggle('d-none', isAdmin);
+    username.required = isAdmin;
+    deptAdmin.required = isAdmin;
+    deptErr.classList.add('d-none');
+    deptAdmin.setCustomValidity('');
+    form.classList.remove('was-validated');
+  }
+
+  tabEmp.addEventListener('click', () => { tabEmp.classList.add('active'); tabAdm.classList.remove('active'); setRole('Employee'); });
+  tabAdm.addEventListener('click', () => { tabAdm.classList.add('active'); tabEmp.classList.remove('active'); setRole('Admin'); });
+
+  togglePwd.addEventListener('click', () => {
+    const t = pwd.getAttribute('type') === 'password' ? 'text' : 'password';
+    pwd.setAttribute('type', t); pwd2.setAttribute('type', t);
+  });
+
+  function showToast(type, msg){
+    toastMsg.textContent = msg || '';
+    toastEl.classList.toggle('text-bg-success', type==='success');
+    toastEl.classList.toggle('text-bg-danger',  type==='danger');
+    toastEl.classList.toggle('text-bg-warning', type==='warning');
+    if (!bsToast) bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+    bsToast.show();
+  }
+
+  async function loadDepartments(){
+    deptSpin.classList.remove('d-none');
+    try{
+      const r = await fetch(API.names, { headers:{ 'X-Correlation-ID': crypto.randomUUID?.() || String(Date.now()) }});
+      if(!r.ok) throw new Error('departman listesi alınamadı: ' + r.status);
+      const data = await r.json();
+      const names = (Array.isArray(data) ? data : []).filter(Boolean)
+        .sort((a,b) => a.localeCompare(b, 'tr', {sensitivity:'base'}));
+      // temizle
+      deptAdmin.innerHTML = '<option value="">Seçiniz…</option>';
+      deptEmp.innerHTML   = '<option value="">Seçiniz…</option>';
+      for (const n of names){
+        const o1 = document.createElement('option'); o1.value=n; o1.textContent=n; deptAdmin.appendChild(o1);
+        const o2 = document.createElement('option'); o2.value=n; o2.textContent=n; deptEmp.appendChild(o2);
+      }
+    }catch(err){
+      console.error(err);
+      showToast('warning','Departman listesi alınamadı. Yine de kayıt deneyebilirsiniz.');
+    }finally{
+      deptSpin.classList.add('d-none');
+    }
+  }
+
+  async function checkHasAdmin(name){
+    if(!name) return false;
+    try{
+      const r = await fetch(API.hasAdmin + encodeURIComponent(name));
+      if(!r.ok) return false;
+      const d = await r.json();
+      return typeof d === 'boolean' ? d : !!d.hasAdmin;
+    }catch{ return false; }
+  }
+
+  deptAdmin.addEventListener('change', async () => {
+    if (roleHidden.value !== 'Admin') return;
+    deptErr.classList.add('d-none'); deptAdmin.setCustomValidity('');
+    const name = deptAdmin.value;
+    if(!name) return;
+    const has = await checkHasAdmin(name);
+    if(has){
+      deptErr.classList.remove('d-none');
+      deptAdmin.setCustomValidity('Bu departmanın zaten bir admini var.');
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    form.classList.add('was-validated');
+    // şifre eşleşmesi
+    if (pwd.value !== pwd2.value) { pwd2.setCustomValidity('Şifreler uyuşmuyor.'); } else { pwd2.setCustomValidity(''); }
+    if (!form.checkValidity()) return;
+
+    const payload = {
+      firstName: firstName.value.trim(),
+      lastName : lastName.value.trim(),
+      email    : email.value.trim(),
+      phoneNumber: phone.value.trim() || null,
+      password : pwd.value
     };
 
-    const form  = document.getElementById('signupForm');
-    const msg   = document.getElementById('msg');
-    const btn   = document.getElementById('submitBtn');
-    const pwd   = document.getElementById('password');
-    const pwd2  = document.getElementById('password2');
-    const role  = document.getElementById('role');
-    const userIdInput = document.getElementById('userId');
-    const regenBtn = document.getElementById('regen');
-    const togglePwd = document.getElementById('togglePwd');
-
-    function showMessage(text, ok=false) {
-        msg.style.display = 'block';
-        msg.textContent = text;
-        msg.className = 'status ' + (ok ? 'ok' : 'err');
+    let url = API.regEmp;
+    if (roleHidden.value === 'Admin'){
+      const name = deptAdmin.value;
+      const uname = username.value.trim();
+      const has = await checkHasAdmin(name);
+      if (has){ showToast('danger','Bu departmanın zaten bir admini var.'); return; }
+      url = API.regAdm;
+      payload.adminUsername = uname;
+      payload.adminDepartmentName = name;
+      payload.role = 'Admin';
+    } else {
+      const nameEmp = deptEmp.value.trim();
+      if (nameEmp) payload.departmentName = nameEmp;
+      payload.role = 'Employee';
     }
-    function clearMessage(){ msg.style.display='none'; msg.textContent=''; msg.className='status'; }
 
-    // 10 haneli (1000000000-9999999999) UserID üret
-    function generateUserId() {
-        const min = 1000000000; // 10 haneli
-        const max = 9999999999;
-        // Güçlü RNG
-        const a = new Uint32Array(1);
-        crypto.getRandomValues(a);
-        const r = a[0] / 0xFFFFFFFF;
-        return Math.floor(min + r * (max - min));
+    // buton durumu
+    btn.disabled = true; btnText.classList.add('d-none'); btnSpin.classList.remove('d-none');
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-Correlation-ID': crypto.randomUUID?.() || String(Date.now()) },
+        body: JSON.stringify(payload)
+      });
+      const txt = await r.text();
+      if (r.ok || r.status === 201){
+        showToast('success','Kayıt başarılı! Giriş sayfasına geçebilirsiniz.');
+        form.reset(); setRole('Employee'); tabEmp.click();
+      } else if (r.status === 409 && /admin/i.test(txt)){
+        showToast('danger','Bu departmanın zaten bir admini var.');
+      } else if (r.status === 409 && /email|phone/i.test(txt)){
+        showToast('danger','E-posta veya telefon zaten kayıtlı.');
+      } else if (r.status === 400 || r.status === 422){
+        showToast('danger', txt || 'Geçersiz istek. Alanları kontrol edin.');
+      } else {
+        showToast('danger', 'Kayıt başarısız. ('+r.status+') '+(txt||''));
+      }
+    } catch(err){
+      console.error(err); showToast('danger','Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      btn.disabled = false; btnText.classList.remove('d-none'); btnSpin.classList.add('d-none');
     }
-    function setNewUserId() { userIdInput.value = String(generateUserId()); }
+  });
 
-    // İlk yüklemede bir UserID ata
-    setNewUserId();
-    regenBtn.addEventListener('click', setNewUserId);
-
-    // Şifre göster/gizle
-    togglePwd.addEventListener('click', () => {
-        const t = pwd.type === 'password' ? 'text' : 'password';
-        pwd.type = t;
-        togglePwd.textContent = t === 'password' ? 'Göster' : 'Gizle';
-    });
-
-    // Şifre kuralı: en az 8, bir büyük ve bir küçük harf
-    const passRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearMessage();
-
-        // Basit doğrulamalar
-        if (!['Admin','Employee'].includes(role.value)) {
-            showMessage('Lütfen rol seçin.'); return;
-        }
-        if (!passRegex.test(pwd.value)) {
-            showMessage('Şifre en az 8 karakter olmalı ve en az bir büyük + bir küçük harf içermelidir.');
-            return;
-        }
-        if (pwd.value !== pwd2.value) {
-            showMessage('Şifreler eşleşmiyor.'); return;
-        }
-        if (!/^\d{10}$/.test(userIdInput.value)) {
-            showMessage('UserID 10 haneli olmalıdır.'); return;
-        }
-
-        // Opsiyonel alanlar: departmentId, phoneNumber
-        const deptRaw = document.getElementById('departmentId').value.trim();
-        const phoneRaw = document.getElementById('phoneNumber').value.trim();
-
-        const payload = {
-            // Zorunlu alanlar
-            userId: Number(userIdInput.value), // numeric(10,0) ile uyumlu
-            role: role.value,                  // "Admin" | "Employee"
-            firstName: document.getElementById('firstName').value.trim(),
-            lastName: document.getElementById('lastName').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            password: pwd.value,
-
-            // Opsiyoneller
-            phoneNumber: phoneRaw || null,
-            departmentId: deptRaw ? Number(deptRaw) : null
-        };
-
-        // Hangi endpoint?
-        const url = (role.value === 'Admin') ? ENDPOINTS.registerAdmin : ENDPOINTS.registerEmployee;
-
-        btn.disabled = true; btn.textContent = 'Kaydediliyor...';
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                showMessage('Kayıt tamamlandı! Giriş sayfasına yönlendiriliyorsunuz...', true);
-                setTimeout(() => window.location.href = '/Auth/Login', 900);
-            } else if (res.status === 400) {
-                const data = await res.json().catch(() => ({}));
-                showMessage(data?.code ? `Hata: ${data.code}` : 'Geçersiz istek. Alanları kontrol edin.');
-            } else if (res.status === 409) {
-                showMessage('Bu kullanıcı zaten kayıtlı görünüyor.');
-            } else {
-                const text = await res.text().catch(()=>'');
-                showMessage('Beklenmeyen bir hata oluştu. ' + (text || ''));
-            }
-        } catch (err) {
-            showMessage('Sunucuya ulaşılamadı. İnternet/bağlantı ayarlarını kontrol edin.');
-        } finally {
-            btn.disabled = false; btn.textContent = 'Kaydı Tamamla';
-        }
-    });
+  document.addEventListener('DOMContentLoaded', () => { setRole('Employee'); loadDepartments(); });
+})();
 </script>
-</body>
-</html>
 

@@ -49,62 +49,87 @@ public sealed class AdminService : IAdminService
             );
     }
 
-    public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
+public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
+{
+    // --- Validations ---
+    if (string.IsNullOrWhiteSpace(adminDto.Username))
+        throw new AppException(AppErrors.Validation.BadRequest, "Admin username boş olamaz.");
+    if (string.IsNullOrWhiteSpace(adminDto.DepartmentName))
+        throw new AppException(AppErrors.Validation.BadRequest, "Admin department boş olamaz.");
+    if (string.IsNullOrWhiteSpace(userDto.Password))
+        throw new AppException(AppErrors.Validation.BadRequest, "Parola boş olamaz.");
+
+    // Username benzersizliği
+    var usernameExists = await _context.Admins.AsNoTracking()
+        .AnyAsync(a => a.Username == adminDto.Username);
+    if (usernameExists)
+        throw new AppException(AppErrors.Common.Conflict, "Bu admin kullanıcı adı zaten mevcut.");
+
+    // Department'ı isimden bul
+    var dept = await _context.Departments.AsNoTracking()
+        .Where(d => d.DepartmentName == adminDto.DepartmentName.Trim())
+        .Select(d => new { d.DepartmentID, d.DepartmentName })
+        .FirstOrDefaultAsync();
+
+    if (dept is null)
+        throw new AppException(AppErrors.Validation.BadRequest, "Böyle bir departman bulunamadı.");
+
+    // --- Transaction (yarışları engelle) ---
+    await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+    try
     {
-        if (string.IsNullOrWhiteSpace(adminDto.Username))
-            throw new AppException(AppErrors.Validation.BadRequest, "Admin username boş olamaz.");
-        if (string.IsNullOrWhiteSpace(adminDto.DepartmentName))
-            throw new AppException(AppErrors.Validation.BadRequest, "Admin department boş olamaz.");
+        // Aynı departmanda admin var mı? (TX içinde kontrol)
+        var deptHasAdmin = await _context.Admins.AsNoTracking()
+            .AnyAsync(a => a.DepartmentName == dept.DepartmentName);
+        if (deptHasAdmin)
+            throw new AppException(AppErrors.Common.Conflict, "Bu departmanın zaten bir admini var.");
 
-        // Çakışmalar
-        var userExists = await _context.Users.AsNoTracking()
-            .AnyAsync(u => u.UserID == userDto.UserID);
-        if (userExists)
-            throw new AppException(AppErrors.Common.Conflict, "Bu UserID zaten mevcut.");
-
-        var usernameExists = await _context.Admins.AsNoTracking()
-            .AnyAsync(a => a.Username == adminDto.Username);
-        if (usernameExists)
-            throw new AppException(AppErrors.Common.Conflict, "Bu admin kullanıcı adı zaten mevcut.");
-
-        await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
-        try
+        // (Opsiyonel) Dışarıdan UserID verildiyse çakışma kontrolü
+        if (userDto.UserID > 0)
         {
-            // Kullanıcıyı oluştur (düz metin parola)
-            var user = new User
-            {
-                UserID = userDto.UserID,
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email,
-                PhoneNumber = userDto.PhoneNumber,
-                DepartmentID = userDto.DepartmentID,
-                Role = "Admin",
-                IsActive = userDto.IsActive,
-                Password = userDto.Password
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Admin kaydı
-            var admin = new Admin
-            {
-                UserID = user.UserID,
-                Username = adminDto.Username,
-                DepartmentName = adminDto.DepartmentName
-            };
-            _context.Admins.Add(admin);
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-            return true;
+            var userExists = await _context.Users.AsNoTracking()
+                .AnyAsync(u => u.UserID == userDto.UserID);
+            if (userExists)
+                throw new AppException(AppErrors.Common.Conflict, "Bu UserID zaten mevcut.");
         }
-        catch
+
+        // Kullanıcı kaydı (PAROLA DÜZ METİN)
+        var user = new User
         {
-            await tx.RollbackAsync();
-            throw;
-        }
+            FirstName    = userDto.FirstName,
+            LastName     = userDto.LastName,
+            Email        = userDto.Email,
+            PhoneNumber  = userDto.PhoneNumber,
+            DepartmentID = dept.DepartmentID,      // Admin için zorunlu
+            Role         = "Admin",
+            IsActive     = userDto.IsActive,
+            Password     = userDto.Password        // <-- Plain text (isteğin üzerine)
+        };
+        if (userDto.UserID > 0)
+            user.UserID = userDto.UserID;         // Aksi halde DB/EF üretsin
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // Admin kaydı
+        var admin = new Admin
+        {
+            UserID         = user.UserID,
+            Username       = adminDto.Username.Trim(),
+            DepartmentName = dept.DepartmentName
+        };
+        _context.Admins.Add(admin);
+
+        await _context.SaveChangesAsync();
+        await tx.CommitAsync();
+        return true;
     }
+    catch
+    {
+        await tx.RollbackAsync();
+        throw;
+    }
+}
 
     public async Task<bool> UpdateAdminDepartmentAsync(long adminId, string newDepartmentName)
     {
