@@ -25,11 +25,10 @@ public sealed class MailController : ControllerBase
     );
 
     // ========== ENDPOINTS ==========
-
-    /// <summary>
+    
     /// Var olan bir Alert için (AlertID) adminlere e-posta gönderir.
     /// Alert yoksa veya admin e-postası bulunamazsa 404 döner.
-    /// </summary>
+
     [HttpPost("alerts/{alertId:int}/notify")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -39,10 +38,10 @@ public sealed class MailController : ControllerBase
         return sent ? Ok() : NotFound(new ErrorBody(AppErrors.Common.NotFound.Code));
     }
 
-    /// <summary>
+
     /// Renk-bazlı kritik stok için adminlere e-posta gönderir.
     /// Admin e-postası bulunamazsa 404 döner.
-    /// </summary>
+
     [HttpPost("low-stock")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

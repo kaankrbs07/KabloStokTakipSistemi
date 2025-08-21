@@ -49,7 +49,7 @@ public sealed class AuthController : ControllerBase
 
     // Employee register (isterseniz bunu Admin'e kapatın/açın)
     [HttpPost("register/employee")]
-    [AllowAnonymous] // İsterseniz [Authorize(Roles = "Admin")] yapın
+    [AllowAnonymous] 
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterEmployee([FromBody] RegisterEmployeeRequest req, CancellationToken ct = default)
