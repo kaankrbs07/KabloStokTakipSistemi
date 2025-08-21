@@ -6,6 +6,8 @@ using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.Services.Interfaces;
 
+namespace KabloStokTakipSistemi.Controllers;
+
 [ApiController]
 [Route("api/department")]
 public sealed class DepartmentController : ControllerBase
@@ -36,8 +38,13 @@ public sealed class DepartmentController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> HasAdmin([FromQuery] string name, CancellationToken ct)
     {
-        var has = await _db.Departments.AsNoTracking()
-            .AnyAsync(d => d.DepartmentName == name && d.AdminID != null, ct);
+        var deptName = name?.Trim();
+        if (string.IsNullOrWhiteSpace(deptName))
+            return BadRequest(new { hasAdmin = false, message = "Departman adı zorunlu." });
+
+        var has = await _db.Admins.AsNoTracking()
+            .AnyAsync(a => a.DepartmentName == deptName, ct);
+
         return Ok(new { hasAdmin = has });
     }
 
