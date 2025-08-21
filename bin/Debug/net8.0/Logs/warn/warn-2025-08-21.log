@@ -1,0 +1,1 @@
+2025-08-21 13:04:33.4737|WARN|KabloStokTakipSistemi.Middlewares.RequestResponseLoggingMiddleware|cid=dcb7ccfa-34f0-4cab-a44f-fc4630f806d5|uid=-|path=https://localhost/api/auth/login/employee|msg=HTTP POST /api/auth/login/employee => 401 (586 ms) 
