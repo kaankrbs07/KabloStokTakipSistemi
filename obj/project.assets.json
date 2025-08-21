@@ -75,6 +75,15 @@
           }
         }
       },
+      "dotenv.net/4.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.1/dotenv.net.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.1/dotenv.net.dll": {}
+        }
+      },
       "Humanizer.Core/2.14.1": {
         "type": "package",
         "compile": {
@@ -1757,6 +1766,20 @@
         "lib/netstandard2.0/BouncyCastle.Cryptography.dll",
         "lib/netstandard2.0/BouncyCastle.Cryptography.xml",
         "packageIcon.png"
+      ]
+    },
+    "dotenv.net/4.0.0": {
+      "sha512": "SM8Qp6L/E3tsLKDFkV23M8WHyp5l1YqsXkylQDjQjV02Z2tUL3J6j1gV0gMs4L6YtoSB7jZPw2dnDdnpEXnpNQ==",
+      "type": "package",
+      "path": "dotenv.net/4.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "dotenv.net.4.0.0.nupkg.sha512",
+        "dotenv.net.nuspec",
+        "lib/netstandard2.0/dotenv.net.dll",
+        "lib/netstandard2.1/dotenv.net.dll"
       ]
     },
     "Humanizer.Core/2.14.1": {
@@ -4564,7 +4587,8 @@
       "Swashbuckle.AspNetCore.Swagger >= 8.0.0",
       "Swashbuckle.AspNetCore.SwaggerGen >= 8.0.0",
       "Swashbuckle.AspNetCore.SwaggerUI >= 8.0.0",
-      "System.IdentityModel.Tokens.Jwt >= 8.12.0"
+      "System.IdentityModel.Tokens.Jwt >= 8.12.0",
+      "dotenv.net >= 4.0.0"
     ]
   },
   "packageFolders": {
@@ -4671,6 +4695,10 @@
           "System.IdentityModel.Tokens.Jwt": {
             "target": "Package",
             "version": "[8.12.0, )"
+          },
+          "dotenv.net": {
+            "target": "Package",
+            "version": "[4.0.0, )"
           }
         },
         "imports": [

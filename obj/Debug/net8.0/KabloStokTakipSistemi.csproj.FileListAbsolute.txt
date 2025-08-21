@@ -155,3 +155,4 @@ C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debu
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.RazorAssemblyInfo.cache
 C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\obj\Debug\net8.0\KabloStokTakipSistemi.RazorAssemblyInfo.cs
+C:\Users\Enes\RiderProjects\KabloStokTakipSistemi\KabloStokTakipSistemi\bin\Debug\net8.0\global.json
