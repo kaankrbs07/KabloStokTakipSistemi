@@ -1,5 +1,4 @@
-﻿// DepartmentController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KabloStokTakipSistemi.Data;
@@ -46,6 +45,17 @@ public sealed class DepartmentController : ControllerBase
             .AnyAsync(a => a.DepartmentName == deptName, ct);
 
         return Ok(new { hasAdmin = has });
+    }  
+     
+    [HttpGet("public/resolve-id")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResolveId([FromQuery] string name, CancellationToken ct)
+    {
+        var id = await _db.Departments.AsNoTracking()
+            .Where(d => d.DepartmentName == name)
+            .Select(d => (int?)d.DepartmentID)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new { departmentId = id });
     }
 
 
