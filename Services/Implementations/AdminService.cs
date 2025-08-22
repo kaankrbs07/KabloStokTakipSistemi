@@ -1,19 +1,23 @@
-﻿using System.Data;
+
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Users;
-using KabloStokTakipSistemi.Middlewares; // AppException/AppErrors
-using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using KabloStokTakipSistemi.Middlewares; // AppException/AppErrors
 
 namespace KabloStokTakipSistemi.Services.Implementations;
 
-public sealed class AdminService : IAdminService
+public class AdminService : IAdminService
 {
     private readonly AppDbContext _context;
-
-    // ILogger kaldırıldı — merkezi NLog + middleware kullanılıyor
-    public AdminService(AppDbContext context) => _context = context;
+    // ILogger enjekte kalsın ama bilgi logları kaldırıldı. Gerekirse Warning için kullanırız.
+    private readonly ILogger<AdminService> _logger;
+    public AdminService(AppDbContext context, ILogger<AdminService> logger)
+    {
+        _context = context;
+        _logger  = logger;
+    }
 
     public async Task<IEnumerable<GetAdminDto>> GetAllAdminsAsync()
     {
@@ -38,108 +42,70 @@ public sealed class AdminService : IAdminService
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.AdminID == adminId);
 
-        return a is null
-            ? null
-            : new GetAdminDto(
-                a.AdminID,
-                a.Username,
-                a.DepartmentName,
-                a.User?.FirstName,
-                a.User?.LastName
-            );
+        if (a is null) return null; // Controller 404'a çevirir (middleware 4xx'ü Warning olarak yazar)
+
+        return new GetAdminDto(
+            a.AdminID,
+            a.Username,
+            a.DepartmentName,
+            a.User?.FirstName,
+            a.User?.LastName
+        );
     }
 
-public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
+    public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto adminDto)
 {
-    // ---- INPUT NORMALIZATION & VALIDATION ----
-    var username = adminDto.Username?.Trim();
-    if (string.IsNullOrWhiteSpace(username))
+    // Basit doğrulamalar
+    if (string.IsNullOrWhiteSpace(adminDto.Username))
         throw new AppException(AppErrors.Validation.BadRequest, "Admin username boş olamaz.");
 
-    var requestedDeptName = adminDto.DepartmentName?.Trim();
-    if (string.IsNullOrWhiteSpace(requestedDeptName))
-        throw new AppException(AppErrors.Validation.BadRequest, "Admin department boş olamaz.");
-
-    var password = userDto.Password; // NOTE: prod için PBKDF2 hash önerilir
-    if (string.IsNullOrWhiteSpace(password))
-        throw new AppException(AppErrors.Validation.BadRequest, "Parola boş olamaz.");
-
-    // Username benzersizliği
-    var usernameExists = await _context.Admins.AsNoTracking()
-        .AnyAsync(a => a.Username == username);
-    if (usernameExists)
-        throw new AppException(AppErrors.Common.Conflict, "Bu admin kullanıcı adı zaten mevcut.");
-
-    // Department'ı isimden bul
-    var dept = await _context.Departments.AsNoTracking()
-        .Where(d => d.DepartmentName == requestedDeptName)
-        .Select(d => new { d.DepartmentID, d.DepartmentName })
-        .FirstOrDefaultAsync();
-
-    if (dept is null)
-        throw new AppException(AppErrors.Validation.BadRequest, "Böyle bir departman bulunamadı.");
-
-    // Derleyiciye null olmayacağını kanıtlamak için guard
-    var departmentName = dept.DepartmentName?.Trim();
-    if (string.IsNullOrWhiteSpace(departmentName))
-        throw new AppException(AppErrors.Validation.BadRequest, "Departman adı boş olamaz.");
-
-    // ---- TRANSACTION ----
-    await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-    try
+    // DepartmentID yoksa, DepartmentName'den çöz
+    int? resolvedDeptId = userDto.DepartmentID;
+    if (resolvedDeptId is null)
     {
-        // Aynı departmanda admin var mı? (TX içinde kontrol)
-        var deptHasAdmin = await _context.Admins.AsNoTracking()
-            .AnyAsync(a => a.DepartmentName == departmentName);
-        if (deptHasAdmin)
-            throw new AppException(AppErrors.Common.Conflict, "Bu departmanın zaten bir admini var.");
+        if (string.IsNullOrWhiteSpace(adminDto.DepartmentName))
+            throw new AppException(AppErrors.Validation.BadRequest, "DepartmentName zorunludur.");
 
-        // (Opsiyonel) Dışarıdan UserID verildiyse çakışma kontrolü
-        if (userDto.UserID > 0)
-        {
-            var userExists = await _context.Users.AsNoTracking()
-                .AnyAsync(u => u.UserID == userDto.UserID);
-            if (userExists)
-                throw new AppException(AppErrors.Common.Conflict, "Bu UserID zaten mevcut.");
-        }
+        var name = adminDto.DepartmentName.Trim();
+        resolvedDeptId = await _context.Departments
+            .Where(d => d.DepartmentName == name)
+            .Select(d => (int?)d.DepartmentID)
+            .FirstOrDefaultAsync();
 
-        // ---- USER OLUŞTUR ----
-        var user = new User
-        {
-            FirstName    = userDto.FirstName?.Trim(),
-            LastName     = userDto.LastName?.Trim(),
-            Email        = userDto.Email?.Trim(),
-            PhoneNumber  = userDto.PhoneNumber?.Trim(),
-            DepartmentID = dept.DepartmentID,   // Admin için zorunlu
-            Role         = "Admin",
-            IsActive     = userDto.IsActive,
-            Password     = password             
-        };
-        if (userDto.UserID > 0)
-            user.UserID = userDto.UserID;      // Aksi halde DB/EF üretsin
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        // ---- ADMIN OLUŞTUR ----
-        var admin = new Admin
-        {
-            UserID         = user.UserID,
-            Username       = username,
-            DepartmentName = departmentName // null-safe (yukarıda guard var)
-        };
-        _context.Admins.Add(admin);
-
-        await _context.SaveChangesAsync();
-        await tx.CommitAsync();
-        return true;
+        if (resolvedDeptId is null)
+            throw new AppException(AppErrors.Common.NotFound, "Seçilen departman bulunamadı.");
     }
-    catch
+
+    var parameters = new[]
     {
-        await tx.RollbackAsync();
-        throw;
-    }
+        new SqlParameter("@UserID", userDto.UserID),
+        new SqlParameter("@FirstName", (object?)userDto.FirstName ?? DBNull.Value),
+        new SqlParameter("@LastName", (object?)userDto.LastName ?? DBNull.Value),
+        new SqlParameter("@Email", (object?)userDto.Email ?? DBNull.Value),
+        new SqlParameter("@PhoneNumber", (object?)userDto.PhoneNumber ?? DBNull.Value),
+
+        // Artık NULL değil: çözümlenen DepartmentID
+        new SqlParameter("@DepartmentID", resolvedDeptId!.Value),
+
+        new SqlParameter("@Role", "Admin"),
+        new SqlParameter("@IsActive", userDto.IsActive),
+        new SqlParameter("@Password", userDto.Password), // hash yok, talebine uygun
+
+        // SP admin doğrulamalarını zaten yapıyor; yine de değerleri geçiriyoruz
+        new SqlParameter("@AdminUsername", adminDto.Username),
+        new SqlParameter("@AdminDepartmentName", adminDto.DepartmentName)
+    };
+
+    await _context.Database.ExecuteSqlRawAsync(
+        "EXEC dbo.sp_CreateUser @UserID, @FirstName, @LastName, @Email, @PhoneNumber, " +
+        "@DepartmentID, @Role, @IsActive, @Password, @AdminUsername, @AdminDepartmentName",
+        parameters
+    );
+
+    return true;
 }
+
+
 
     public async Task<bool> UpdateAdminDepartmentAsync(long adminId, string newDepartmentName)
     {
@@ -147,10 +113,11 @@ public async Task<bool> CreateAdminAsync(CreateUserDto userDto, CreateAdminDto a
             throw new AppException(AppErrors.Validation.BadRequest, "Department boş olamaz.");
 
         var admin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == adminId);
-        if (admin is null) return false;
+        if (admin is null) return false; // Controller 404'a çevirsin
 
         admin.DepartmentName = newDepartmentName;
+        _context.Admins.Update(admin);
+
         return await _context.SaveChangesAsync() > 0;
     }
 }
-
