@@ -1,8 +1,9 @@
-﻿using KabloStokTakipSistemi.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs;
+using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 
 namespace KabloStokTakipSistemi.Services.Implementations
 {
@@ -17,25 +18,110 @@ namespace KabloStokTakipSistemi.Services.Implementations
             _alerts = alerts;
         }
 
-        public async Task<bool> InsertAsync(CreateStockMovementDto dto)
+        // Arayüzde tanımlanan metodu doğru şekilde uyguluyoruz
+        public async Task<bool> InsertStockMovementAsync(CreateStockMovementDto dto)
         {
-            var p = new[]
+            using var transaction = await _db.Database.BeginTransactionAsync();
+            
+            try
             {
-                new SqlParameter("@CableID", dto.CableID),
-                new SqlParameter("@TableName", dto.TableName),
-                new SqlParameter("@Quantity", dto.Quantity),
-                new SqlParameter("@MovementType", dto.MovementType),
-                new SqlParameter("@UserID", dto.UserID)
-            };
+                // Validasyonlar
+                if (dto.MovementType != "Giriş" && dto.MovementType != "Çıkış")
+                    throw new ArgumentException("Geçersiz hareket türü. Giriş veya Çıkış olmalıdır.");
 
-            // 1) Hareketi kaydet
-            await _db.Database.ExecuteSqlRawAsync(
-                "EXEC dbo.sp_InsertStockMovement @CableID, @TableName, @Quantity, @MovementType, @UserID", p);
+                if (dto.TableName != "Single" && dto.TableName != "Multi")
+                    throw new ArgumentException("Tablo adı yalnızca 'Single' veya 'Multi' olabilir.");
 
-            // 2) Başarılıysa otomatik uyarı değerlendirmesi
-            await TriggerAutoAlertIfNeededAsync(dto);
+                var user = await _db.Users
+                    .FirstOrDefaultAsync(u => u.UserID == dto.UserID && u.IsActive);
+                    
+                if (user == null)
+                    throw new ArgumentException("Geçersiz veya pasif kullanıcı.");
 
-            return true;
+                if (dto.TableName == "Single" && string.IsNullOrEmpty(dto.color))
+                    throw new ArgumentException("Single kablo işlemleri için renk bilgisi gereklidir.");
+
+                if (dto.TableName == "Single")
+                {
+                    if (dto.MovementType == "Giriş")
+                    {
+                        // Her kablo için ayrı satır ekleme
+                        for (int i = 0; i < dto.Quantity; i++)
+                        {
+                            var singleCable = new SingleCable
+                            {
+                                Color = dto.color,
+                                IsActive = true,
+                                MultiCableID = null
+                            };
+                            _db.SingleCables.Add(singleCable);
+                        }
+                    }
+                    else if (dto.MovementType == "Çıkış")
+                    {
+                        // En düşük CableID'den başlayarak pasif yapma
+                        var cablesToDeactivate = await _db.SingleCables
+                            .Where(sc => sc.Color == dto.color && sc.IsActive)
+                            .OrderBy(sc => sc.CableID)
+                            .Take(dto.Quantity)
+                            .ToListAsync();
+
+                        if (cablesToDeactivate.Count < dto.Quantity)
+                            throw new InvalidOperationException("İstenen miktarda aktif kablo bulunamadı.");
+
+                        foreach (var cable in cablesToDeactivate)
+                        {
+                            cable.IsActive = false;
+                        }
+                    }
+                }
+                else if (dto.TableName == "Multi")
+                {
+                    var multiCable = await _db.MultipleCables
+                        .FirstOrDefaultAsync(mc => mc.MultiCableID == dto.CableID && mc.IsActive);
+                        
+                    if (multiCable == null)
+                        throw new ArgumentException("Geçersiz veya pasif çoklu kablo ID.");
+
+                    if (dto.MovementType == "Giriş")
+                    {
+                        multiCable.Quantity += dto.Quantity;
+                    }
+                    else if (dto.MovementType == "Çıkış")
+                    {
+                        if (multiCable.Quantity < dto.Quantity)
+                            throw new InvalidOperationException($"Yetersiz stok. Mevcut miktar: {multiCable.Quantity}");
+
+                        multiCable.Quantity -= dto.Quantity;
+                    }
+                }
+
+                // Stok hareketlerini kaydet
+                var stockMovement = new StockMovement
+                {
+                    CableID = dto.CableID,
+                    TableName = dto.TableName,
+                    Quantity = dto.Quantity,
+                    MovementType = dto.MovementType,
+                    UserID = dto.UserID,
+                    color = dto.TableName == "Single" ? dto.color : null,
+                    MovementDate = DateTime.Now
+                };
+
+                _db.StockMovements.Add(stockMovement);
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Otomatik uyarı tetikleme
+                await TriggerAutoAlertIfNeededAsync(dto);
+
+                return true; // İşlem başarılı
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<IEnumerable<GetStockMovementDto>> GetHistoryAsync()
@@ -102,9 +188,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
                     .FirstAsync();
 
                 await _alerts.EvaluateMultiThresholdAsync(dto.CableID, currentQty, minThreshold);
-            }
-            // Diğer TableName değerleri varsa burada ele alabilirsiniz.
+            } 
         }
     }
 }
-
