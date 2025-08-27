@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KabloStokTakipSistemi.Models;
 
-[Index(nameof(UserID), IsUnique = true)] // 1-1 ilişkiyi zorlar (her User en fazla 1 employee)
+[Index(nameof(UserID), IsUnique = true)] // 1-1 ilişkiye zorlar (her User en fazla 1 employee)
 public class Employee
 {
     [Key]
