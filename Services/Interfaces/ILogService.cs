@@ -17,8 +17,6 @@ namespace KabloStokTakipSistemi.Services.Interfaces
 
         Task<IReadOnlyList<LogStatDto>> GetCountByTableAsync(DateTime? from = null, DateTime? to = null,
             CancellationToken ct = default);
-
-        // İsteğe bağlı: manuel log (ör. excel ile toplu düzeltme vs.)
         Task<bool> LogManualStockEditAsync(ManualStockEditLogDto dto, CancellationToken ct = default);
     }
 }
