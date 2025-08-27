@@ -8,7 +8,7 @@ namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public sealed class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     public UsersController(IUserService userService) => _userService = userService;
