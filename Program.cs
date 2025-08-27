@@ -127,13 +127,13 @@ app.UseAuthorization();
 // SQL SESSION_CONTEXT (UserID yazımı) — Auth’tan sonra
 app.UseMiddleware<SessionContextMiddleware>();
 
-// ⬇️ Statik dosyalar (wwwroot) ve MVC route'ları
+// Statik dosyalar (wwwroot) ve MVC route'ları
 app.UseStaticFiles();
 
 // API controller’lar 
 app.MapControllers();
 
-// ⬇️ Views için default rota: "/" -> Home/Index
+// Views için default rota: "/" -> Home/Index
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"
