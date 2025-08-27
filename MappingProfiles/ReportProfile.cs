@@ -8,11 +8,11 @@ public class ReportProfile : Profile
 {
     public ReportProfile()
     {
-        // --- Aylık rapor SP DTO’ları (passthrough) ---
+        // --- Aylık rapor SP DTO’ları 
         CreateMap<MonthlyMultiCableReportDto, MonthlyMultiCableReportDto>();
         CreateMap<MonthlySingleCableReportDto, MonthlySingleCableReportDto>();
 
-        // --- Kullanıcı aktivite özeti SP DTO’su (passthrough) ---
+        // --- Kullanıcı aktivite özeti SP DTO’su 
         CreateMap<UserActivitySummaryDto, UserActivitySummaryDto>();
     }
 }
