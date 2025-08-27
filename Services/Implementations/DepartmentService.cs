@@ -1,4 +1,4 @@
-﻿// Services/DepartmentService.cs
+
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using KabloStokTakipSistemi.Data;
@@ -6,7 +6,7 @@ using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using KabloStokTakipSistemi.Middlewares; // AppException/AppErrors
+using KabloStokTakipSistemi.Middlewares; 
 
 namespace KabloStokTakipSistemi.Services.Implementations;
 
@@ -15,7 +15,6 @@ public sealed class DepartmentService : IDepartmentService
     private readonly AppDbContext _db;
     private readonly IMapper _mapper;
 
-    // ILogger enjekte edilebilir ama kullanmıyoruz (DI imzasını bozmayalım)
     public DepartmentService(AppDbContext db, IMapper mapper, ILogger<DepartmentService> _)
     {
         _db = db;
