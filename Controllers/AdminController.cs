@@ -7,7 +7,7 @@ namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AdminController : ControllerBase
+public sealed class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
 
