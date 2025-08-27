@@ -28,10 +28,9 @@ public sealed class RequestResponseLoggingMiddleware
 
         var userId = ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "-";
 
-        // NLog 5.0: ScopeContext kullan
+        // NLog 5.0: ScopeContext
         using (ScopeContext.PushProperty("CorrelationId", correlationId))
         using (ScopeContext.PushProperty("UserId", userId))
-        // İstersen diğer provider’lar için BeginScope da açabilirsin (opsiyonel):
         using (_log.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = correlationId, ["UserId"] = userId }))
         {
             var sw   = Stopwatch.StartNew();
@@ -51,7 +50,7 @@ public sealed class RequestResponseLoggingMiddleware
             {
                 _log.LogWarning("HTTP {Method} {Path} => {Status} ({Elapsed} ms)", req.Method, path, status, sw.ElapsedMilliseconds);
             }
-            // 2xx-3xx: log yazmıyoruz (dosya şişmesin)
+            // 2xx-3xx: log yazmıyoruz
         }
     }
 }
