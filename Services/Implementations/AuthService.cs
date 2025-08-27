@@ -18,7 +18,6 @@ public sealed class AuthService : IAuthService
     private readonly JwtOptions _jwt;
     private readonly IUserService _users;
 
-    // ILogger kaldırıldı — merkezi NLog + middleware kullanılıyor
     public AuthService(AppDbContext db, IOptions<JwtOptions> jwt, IUserService users)
     {
         _db = db;
