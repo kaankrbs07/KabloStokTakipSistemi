@@ -16,11 +16,11 @@ public class UserProfile : Profile
         // CreateUserDto -> User
         CreateMap<CreateUserDto, User>();
 
-        // UpdateUserDto -> User (null alanlar mevcut değeri ezmesin)
+        // UpdateUserDto -> User 
         CreateMap<UpdateUserDto, User>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        // Admin -> GetAdminDto (User navigasyonu null olabilir; korumalı yazdık)
+        // Admin -> GetAdminDto 
         CreateMap<Admin, GetAdminDto>()
             .ForMember(d => d.FirstName,
                 opt => opt.MapFrom(s => s.User != null ? s.User.FirstName : null))
@@ -48,8 +48,5 @@ public class UserProfile : Profile
         CreateMap<UpdateEmployeeDto, Employee>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
 
-        // Not: UserActivitySummaryDto bir SP çıktısı (keyless). Bunu User'dan map'lemek yerine
-        // DbContext'te HasNoKey() ile SP sonucunu doğrudan DTO'ya projekte etmek daha doğru. 
-        // Bu yüzden: CreateMap<User, UserActivitySummaryDto>(); satırını kaldırdım.
     }
 }
