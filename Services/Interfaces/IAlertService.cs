@@ -26,7 +26,7 @@ public interface IAlertService
     Task<bool> HasActiveAlertForColorAsync(string color, CancellationToken ct = default);
     Task<bool> HasActiveAlertForMultiAsync(int multiCableId, CancellationToken ct = default);
 
-    // --- E-posta bildirimleri (manuel tetikleme ihtiyacı kalmasa da geriye dönük kaldı) ---
+    // --- E-posta bildirimleri 
     Task<bool> NotifyAdminsForAlertAsync(int alertId, CancellationToken ct = default);
     Task<bool> NotifyAdminsForLowStockAsync(string color, int qty, CancellationToken ct = default);
 
