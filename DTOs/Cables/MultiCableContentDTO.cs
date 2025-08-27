@@ -1,4 +1,4 @@
-﻿// DTOs/Cables/MultiCableContentDtos.cs
+
 namespace KabloStokTakipSistemi.DTOs.Cables;
 
 public record CreateMultiCableContentDto(
@@ -10,6 +10,6 @@ public record CreateMultiCableContentDto(
 public record GetMultiCableContentDto(
     int MultiCableID,
     int SingleCableID,
-    string? SingleCableColor,   // rapor/kullanıcı arayüzü için faydalı
+    string? SingleCableColor,   
     int Quantity
 );
