@@ -10,7 +10,7 @@ namespace KabloStokTakipSistemi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize] // Tüm metodlar için yetkilendirme, role bazlı özelleştirme altta
-public class CableController : ControllerBase
+public sealed class CableController : ControllerBase
 {
     private readonly ICableService _cableService;
     public CableController(ICableService cableService) => _cableService = cableService;
