@@ -1,4 +1,4 @@
-﻿// Services/ReportService.cs
+
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs;
 using KabloStokTakipSistemi.DTOs.Users;
@@ -12,7 +12,7 @@ public sealed class ReportService : IReportService
     private readonly AppDbContext _db;
 
     // DI imzasını bozma
-    public ReportService(AppDbContext db, ILogger<ReportService> _ /*unused*/)
+    public ReportService(AppDbContext db, ILogger<ReportService> _ )
     {
         _db = db;
     }
@@ -20,7 +20,7 @@ public sealed class ReportService : IReportService
     public async Task<UserActivitySummaryDto?> GetUserActivitySummaryAsync(
         decimal userId, CancellationToken ct = default)
     {
-        // EXEC dbo.sp_GetUserActivitySummary @UserID = {userId}
+        
         var rows = await _db.Database
             .SqlQueryRaw<UserActivitySummaryDto>("EXEC dbo.sp_GetUserActivitySummary @UserID = {0}", userId)
             .ToListAsync(ct);
