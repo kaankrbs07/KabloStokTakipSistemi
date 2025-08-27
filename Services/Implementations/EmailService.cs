@@ -9,9 +9,6 @@ using MimeKit;
 
 namespace KabloStokTakipSistemi.Services.Implementations
 {
-    /// <summary>
-    /// MailKit tabanlı e-posta servisi. (Warn/Error log politikası)
-    /// </summary>
     public sealed class EmailService : IEmailService
     {
         private readonly SmtpOptions _opt;
