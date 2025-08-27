@@ -1,4 +1,4 @@
-﻿// Services/LogService.cs
+
 using KabloStokTakipSistemi.Data;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -15,7 +15,7 @@ namespace KabloStokTakipSistemi.Services.Implementations
         private readonly AppDbContext _db;
         private readonly IMapper _mapper;
 
-        public LogService(AppDbContext db, IMapper mapper /* ILogger<LogService> _ opsiyonel */)
+        public LogService(AppDbContext db, IMapper mapper )
         {
             _db = db;
             _mapper = mapper;
