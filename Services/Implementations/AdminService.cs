@@ -11,7 +11,7 @@ namespace KabloStokTakipSistemi.Services.Implementations;
 public class AdminService : IAdminService
 {
     private readonly AppDbContext _context;
-    // ILogger enjekte kalsın ama bilgi logları kaldırıldı. Gerekirse Warning için kullanırız.
+    // ILogger enjekte kalsın
     private readonly ILogger<AdminService> _logger;
     public AdminService(AppDbContext context, ILogger<AdminService> logger)
     {
