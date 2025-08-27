@@ -1,18 +1,18 @@
-﻿// Services/CableService.cs
+
 using KabloStokTakipSistemi.Data;
 using KabloStokTakipSistemi.DTOs.Cables;
 using KabloStokTakipSistemi.Models;
 using KabloStokTakipSistemi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using KabloStokTakipSistemi.Middlewares; // İstersen AppException kullan
+using KabloStokTakipSistemi.Middlewares; 
 
 namespace KabloStokTakipSistemi.Services.Implementations
 {
     public class CableService : ICableService
     {
         private readonly AppDbContext _db;
-        public CableService(AppDbContext db, ILogger<CableService> _ /*silme: DI imzası aynı kalsın*/)
+        public CableService(AppDbContext db, ILogger<CableService> _ )
         {
             _db = db;
         }
