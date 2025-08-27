@@ -8,7 +8,7 @@ namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class StockMovementsController : ControllerBase
+public sealed class StockMovementsController : ControllerBase
 {
     private static readonly HashSet<string> AllowedTables =
         new(StringComparer.OrdinalIgnoreCase) { "Single", "Multi" };
