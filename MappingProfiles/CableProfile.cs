@@ -4,9 +4,6 @@ using KabloStokTakipSistemi.Models;
 
 namespace KabloStokTakipSistemi.MappingProfiles;
 
-/// <summary>
-/// AutoMapper profile for cable-related entities and DTOs
-/// </summary>
 public sealed class CableProfile : Profile
 {
     public CableProfile()
@@ -25,7 +22,7 @@ public sealed class CableProfile : Profile
         // CreateSingleCableDto -> SingleCable
         CreateMap<CreateSingleCableDto, SingleCable>();
 
-        // UpdateSingleCableDto -> SingleCable (null-safe updates)
+        // UpdateSingleCableDto -> SingleCable
         CreateMap<UpdateSingleCableDto, SingleCable>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
     }
@@ -38,7 +35,7 @@ public sealed class CableProfile : Profile
         // CreateMultiCableDto -> MultiCable
         CreateMap<CreateMultiCableDto, MultiCable>();
 
-        // UpdateMultiCableDto -> MultiCable (null-safe updates)
+        // UpdateMultiCableDto -> MultiCable 
         CreateMap<UpdateMultiCableDto, MultiCable>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
     }
@@ -64,7 +61,7 @@ public sealed class CableProfile : Profile
         // CreateCableThresholdDto -> CableThreshold
         CreateMap<CreateCableThresholdDto, CableThreshold>();
 
-        // UpdateCableThresholdDto -> CableThreshold (null-safe updates)
+        // UpdateCableThresholdDto -> CableThreshold 
         CreateMap<UpdateCableThresholdDto, CableThreshold>()
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember is not null));
 
