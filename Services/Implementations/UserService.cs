@@ -84,7 +84,7 @@ public async Task<bool> CreateUserAsync(CreateUserDto dto)
     if (resolvedDeptId is null)
         throw new AppException(AppErrors.Validation.BadRequest, "DepartmentID zorunludur.");
 
-    // --- SP parametreleri (parola düz metin; istenen şekilde) ---
+    // --- SP parametreleri
     var p = new[]
     {
         new SqlParameter("@UserID", dto.UserID),
