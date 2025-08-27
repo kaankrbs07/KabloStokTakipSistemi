@@ -8,7 +8,7 @@ namespace KabloStokTakipSistemi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EmployeeController : ControllerBase
+public sealed class EmployeeController : ControllerBase
 {
     private readonly IEmployeeService _employeeService;
 
