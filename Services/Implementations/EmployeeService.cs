@@ -11,7 +11,7 @@ public class EmployeeService : IEmployeeService
 {
     private readonly AppDbContext _context;
 
-    public EmployeeService(AppDbContext context, ILogger<EmployeeService> _ /*logger enjekte edilebilir*/)
+    public EmployeeService(AppDbContext context, ILogger<EmployeeService> _ )
     {
         _context = context;
     }
