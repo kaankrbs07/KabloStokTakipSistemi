@@ -9,7 +9,7 @@ namespace KabloStokTakipSistemi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")] // Sadece adminler erişebilir
-public class LogsController : ControllerBase
+public sealed class LogsController : ControllerBase
 {
     private readonly ILogService _logService;
 
@@ -18,7 +18,7 @@ public class LogsController : ControllerBase
         _logService = logService;
     }
 
-    /// Filtreye göre log listesini döner (sayfalama destekli).
+    // Filtreye göre log listesini döner (sayfalama destekli).
     [HttpPost("filter")]
     public async Task<IActionResult> GetLogs([FromBody] LogFilterDto filter, CancellationToken ct)
     {
@@ -26,7 +26,7 @@ public class LogsController : ControllerBase
         return Ok(result);
     }
 
-    /// En son log kayıtlarını döner.
+    // En son log kayıtlarını döner.
     [HttpGet("latest")]
     public async Task<IActionResult> GetLatest([FromQuery] int take = 50, CancellationToken ct = default)
     {
@@ -34,7 +34,7 @@ public class LogsController : ControllerBase
         return Ok(result);
     }
 
-    /// Operasyon türüne göre log sayıları.
+    // Operasyon türüne göre log sayıları.
     [HttpGet("stats/operations")]
     public async Task<IActionResult> GetCountByOperation([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
     {
@@ -42,7 +42,7 @@ public class LogsController : ControllerBase
         return Ok(result);
     }
 
-    /// Tablo adına göre log sayıları.
+    // Tablo adına göre log sayıları.
     [HttpGet("stats/tables")]
     public async Task<IActionResult> GetCountByTable([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
     {
@@ -50,7 +50,7 @@ public class LogsController : ControllerBase
         return Ok(result);
     }
 
-    /// Manuel stok düzeltme işlemini loglar.
+    // Manuel stok düzeltme işlemini loglar.
     [HttpPost("manual-stock-edit")]
     public async Task<IActionResult> LogManualStockEdit([FromBody] ManualStockEditLogDto dto, CancellationToken ct = default)
     {
