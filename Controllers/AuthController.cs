@@ -45,21 +45,8 @@ public sealed class AuthController : ControllerBase
         if (token is null) return Unauthorized();
 
         return Ok(token);
-    }
-
-    // Employee register (isterseniz bunu Admin'e kapatın/açın)
-    [HttpPost("register/employee")]
-    [AllowAnonymous] 
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RegisterEmployee([FromBody] RegisterEmployeeRequest req, CancellationToken ct = default)
-    {
-        if (!ModelState.IsValid) return ValidationProblem(ModelState);
-
-        var ok = await _auth.RegisterEmployeeAsync(req, ct);
-        return ok ? Ok() : BadRequest();
-    }
-
+    } 
+    
     // Kimlik bilgisi doğrulama / profil (token'dan)
     [HttpGet("me")]
     [Authorize]
