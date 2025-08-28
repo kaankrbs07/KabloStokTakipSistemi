@@ -99,7 +99,7 @@ builder.Services
             NameClaimType = ClaimTypes.NameIdentifier
         };
 
-        // 🔑 Header yoksa çereze (cookie) bak — /Admin/Dashboard gibi sayfalar 401 yemesin
+        //  Header yoksa çereze (cookie) bak — sayfalar 401 yemesin
         opt.Events = new JwtBearerEvents
         {
             OnMessageReceived = ctx =>
