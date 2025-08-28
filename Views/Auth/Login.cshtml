@@ -1,212 +1,253 @@
-﻿@{
-    Layout = null;
-    ViewData["Title"] = "Giriş";
+@{
+    Layout = null; 
 }
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>@ViewData["Title"] - Kablo Stok Takip Sistemi</title>
-    <style>
-        :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-        body { margin:0; background:#0f172a; color:#e2e8f0; display:grid; place-items:center; min-height:100vh; }
-        .card { width:380px; background:#111827; padding:24px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
-        h1 { margin:0 0 6px; font-size:22px; }
-        .muted { color:#94a3b8; margin-bottom:18px; font-size:14px; }
-        label { display:block; font-size:14px; margin:12px 0 6px; }
-        input, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
-        input:focus, select:focus { outline:none; border-color:#60a5fa; }
-        .btn { width:100%; margin-top:14px; padding:10px 12px; border-radius:10px; border:0; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
-        .btn:disabled { opacity:.6; cursor:not-allowed; }
-        .hidden { display:none; }
-        .status { margin-top:12px; font-size:13px; padding:10px; border-radius:10px; }
-        .ok { background:#052e16; color:#86efac; border:1px solid #14532d; }
-        .err { background:#3f1d20; color:#fecaca; border:1px solid #7f1d1d; }
-        .row { display:flex; gap:10px; align-items:center; justify-content:space-between; }
-        .right { font-size:12px; color:#94a3b8; cursor:pointer; user-select:none; }
-        .hint { font-size:12px; color:#64748b; margin-top:6px; }
-        .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:#cbd5e1;}
-        .link { color:#93c5fd; text-decoration:underline; cursor:pointer; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Giriş | KSTS</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: #0b1220; color: #e6edf3; display: grid; place-items: center; min-height: 100vh; }
+    .card { width: 100%; max-width: 420px; background: #0f192e; border: 1px solid #243557; border-radius: 14px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,.25); }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #0b152a; padding: 6px; border-radius: 10px; margin-bottom: 16px; }
+    .tab { padding: 10px 12px; border-radius: 8px; text-align: center; cursor: pointer; user-select: none; }
+    .tab.active { background: #183158; }
+    .field { display: grid; gap: 6px; margin: 10px 0 14px; }
+    .field label { font-size: 13px; color: #b9c5d9; }
+    .field input { padding: 10px 12px; border-radius: 9px; border: 1px solid #28406f; background: #0b152a; color: #e6edf3; }
+    .row { display: flex; gap: 10px; }
+    button { all: unset; display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 9px; cursor: pointer; background: #2b5bd7; color: white; font-weight: 600; }
+    button.secondary { background: #32415f; }
+    .muted { color: #9fb0cc; font-size: 13px; }
+    .error { color: #ff9aa5; font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .ok { color: #8de7b9; font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-<div class="card">
-    <h1>Giriş yap</h1>
-    <div class="muted">Rol seç, bilgileri gir ve kimliğini doğrula.</div>
+  <div class="card">
+    <div class="tabs">
+      <div id="tab-admin" class="tab active">Admin</div>
+      <div id="tab-employee" class="tab">Employee</div>
+    </div>
 
-    <form id="loginForm" novalidate>
-        <label for="role">Rol</label>
-        <select id="role" name="role" aria-label="Rol">
-            <option value="Admin" selected>Admin</option>
-            <option value="Employee">Personel</option>
-        </select>
-
-        <div id="adminFields">
-            <label for="username">Kullanıcı Adı (Admin)</label>
-            <input id="username" name="username" autocomplete="username" />
-        </div>
-
-        <div id="employeeFields" class="hidden">
-            <label for="employeeId">Sicil No (5 hane)</label>
-            <input id="employeeId" name="employeeId" inputmode="numeric" pattern="\\d{5}" />
-            <div class="hint">Örnek: 01234</div>
-        </div>
-
-        <div class="row">
-            <label for="password" style="margin:12px 0 6px;">Şifre</label>
-            <span id="togglePwd" class="right" tabindex="0" role="button" aria-controls="password">Göster</span>
-        </div>
-        <input id="password" name="password" type="password" autocomplete="current-password" required />
-
-        <button class="btn" id="submitBtn" type="submit">Giriş yap</button>
-
-        <div id="status" class="status hidden" role="alert" aria-live="polite"></div>
-
-        <div class="hint" style="margin-top:10px">
-            API: <span class="code" id="apiEcho"></span>
-        </div>
-        <div class="hint">
-        </div>
+    <!-- Admin Form -->
+    <form id="form-admin">
+      <div class="field">
+        <label for="admin-username">Kullanıcı Adı</label>
+        <input id="admin-username" name="username" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="admin-password">Şifre</label>
+        <input id="admin-password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="row">
+        <button type="submit">Admin Giriş</button>
+        <button id="logout-admin" type="button" class="secondary" title="Cookie temizle">Çıkış</button>
+      </div>
+      <div id="msg-admin" class="error"></div>
     </form>
 
-    <div id="meBox" class="status hidden ok" style="margin-top:12px"></div>
-</div>
+    <!-- Employee Form -->
+    <form id="form-employee" class="hidden">
+      <div class="field">
+        <label for="emp-id">Employee ID</label>
+        <input id="emp-id" name="employeeId" inputmode="numeric" pattern="[0-9]*" required />
+      </div>
+      <div class="field">
+        <label for="emp-pass">Şifre</label>
+        <input id="emp-pass" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="row">
+        <button type="submit">Employee Giriş</button>
+        <button id="logout-emp" type="button" class="secondary" title="Cookie temizle">Çıkış</button>
+      </div>
+      <div id="msg-emp" class="error"></div>
+    </form>
 
-<script>
-    // === Uç noktalar (AuthController) ===
-    const ENDPOINTS = {
-        admin: "/api/auth/login/admin",
-        employee: "/api/auth/login/employee",
-        me: "/api/auth/me"
-    };
-    document.getElementById("apiEcho").textContent =
-        `${ENDPOINTS.admin} | ${ENDPOINTS.employee}`;
+    <p class="muted" style="margin-top:12px">Token stratejisi: Başarılı girişte JWT <strong>access_token</strong> cookie'sine yazılır. İstek atarken Authorization başlığı yoksa cookie'den okunup eklenir.</p>
+  </div>
 
-    // === Yardımcılar ===
-    const qs  = (sel) => document.querySelector(sel);
-    const qsb = (sel) => document.querySelector(sel).classList;
-    const hide = (id, val) => qs(id).classList.toggle("hidden", val);
-    const setStatus = (msg, ok=false) => {
-        const el = qs("#status");
-        el.textContent = msg;
-        el.className = "status " + (ok ? "ok" : "err");
-        hide("#status", false);
-    };
-    const clearStatus = () => {
-        const el = qs("#status");
-        el.textContent = "";
-        el.className = "status hidden";
-        hide("#meBox", true);
-    };
-    const guid = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-        const r = Math.random()*16|0, v = c==="x"?r:(r&0x3|0x8); return v.toString(16);
-    });
-    const extractToken = (obj) => obj?.token ?? obj?.accessToken ?? obj?.jwt ?? obj?.bearer ?? null;
+  <script>
+    // ==========================
+    // Cookie yardımcıları
+    // ==========================
+    function setCookie(name, value, opts={}) {
+      const parts = [ `${name}=${encodeURIComponent(value)}` ];
+      if (opts['max-age']) parts.push(`Max-Age=${opts['max-age']}`);
+      if (opts.expires) parts.push(`Expires=${opts.expires.toUTCString()}`);
+      parts.push(`Path=${opts.path || '/'}`);
+      parts.push(`SameSite=${opts.samesite || 'Lax'}`);
+      const isHttps = location.protocol === 'https:';
+      if (opts.secure ?? isHttps) parts.push('Secure');
+      document.cookie = parts.join('; ');
+    }
+    function getCookie(name) {
+      return document.cookie.split('; ').find(x => x.startsWith(name+'='))?.split('=')[1] ?? null;
+    }
+    function deleteCookie(name) { setCookie(name, '', { 'max-age': 0 }); }
 
-    // === Rol alanları ===
-    const roleSel = qs("#role");
-    roleSel.addEventListener("change", () => {
-        const isAdmin = roleSel.value === "Admin";
-        hide("#adminFields", !isAdmin);
-        hide("#employeeFields", isAdmin);
-        clearStatus();
-    });
+    // ==========================
+    // JWT alma ve global fetch sarmalayıcı
+    // ==========================
+    window.__jwtCache = null; // header eklerken kullanacağız
 
-    // === Şifre göster/gizle ===
-    const pwd = qs("#password");
-    const toggle = qs("#togglePwd");
-    const togglePwd = () => {
-        pwd.type = pwd.type === "password" ? "text" : "password";
-        toggle.textContent = pwd.type === "password" ? "Göster" : "Gizle";
-    };
-    toggle.addEventListener("click", togglePwd);
-    toggle.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") togglePwd(); });
+    function getJwt() {
+      if (window.__jwtCache) return window.__jwtCache;
+      const c = getCookie('access_token');
+      return c ? decodeURIComponent(c) : null;
+    }
 
-    // === Form submit ===
-    const form = qs("#loginForm");
-    const btn  = qs("#submitBtn");
+    // Authorization başlığını HER ZAMAN doldurmayı dene.
+    // Eğer header yoksa cookie'den oku ve ekle -> Sunucu header bulamazsa zaten cookie fallback devreye girer.
+    async function authFetch(url, options = {}) {
+      const opts = { ...options };
+      const headers = new Headers(opts.headers || {});
+      if (!headers.has('Authorization')) {
+        const jwt = getJwt();
+        if (jwt) headers.set('Authorization', `Bearer ${jwt}`);
+      }
+      opts.headers = headers;
+      // Gerekirse cookie de gitsin diye kredential'ı ekleyelim (CORS yoksa sorun olmaz)
+      if (opts.credentials === undefined) opts.credentials = 'include';
+      return fetch(url, opts);
+    }
 
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        clearStatus();
-        btn.disabled = true;
+    // Sunucunun döndüğü olası şema varyasyonlarını destekle (token | accessToken | jwt)
+    function readTokenFromResponse(obj) {
+      return obj?.token || obj?.accessToken || obj?.jwt || obj?.Jwt || obj?.Token || null;
+    }
 
-        const isAdmin = roleSel.value === "Admin";
-        const url = isAdmin ? ENDPOINTS.admin : ENDPOINTS.employee;
-
-        // İstek gövdesi: .NET varsayılan JSON binder'ı case-insensitive.
-        const body = isAdmin
-            ? { username: qs("#username").value?.trim(), password: pwd.value }
-            : { employeeId: qs("#employeeId").value?.trim(), password: pwd.value };
-
-        // Basit validasyon
-        if (isAdmin && !body.username) {
-            setStatus("Lütfen kullanıcı adını girin.");
-            btn.disabled = false; return;
-        }
-        if (!isAdmin && !/^[0-9]{5}$/.test(body.employeeId || "")) {
-            setStatus("Sicil numarası 5 haneli olmalıdır.");
-            btn.disabled = false; return;
-        }
-        if (!body.password) {
-            setStatus("Lütfen şifreyi girin.");
-            btn.disabled = false; return;
-        }
-
-        // Correlation ID (middleware ile uyumlu)
-        const cid = guid();
-
+    // Token'i cookie'ye yaz + hafızaya al
+    function persistToken(token, expiresAt) {
+      window.__jwtCache = token;
+      let maxAge = 60 * 60 * 8; // 8 saat varsayılan
+      if (expiresAt) {
         try {
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Correlation-ID": cid
-                },
-                body: JSON.stringify(body)
-            });
+          const exp = new Date(expiresAt);
+          const sec = Math.max(1, Math.floor((exp.getTime() - Date.now()) / 1000));
+          if (Number.isFinite(sec)) maxAge = sec;
+        } catch {}
+      }
+      setCookie('access_token', token, { 'max-age': maxAge, samesite: 'Lax' });
+    }
 
-            if (res.status === 200) {
-                const json = await res.json().catch(() => ({}));
-                // Tüm yanıtı sakla; ayrıca token varsa ayrı kaydet
-                localStorage.setItem("authResponse", JSON.stringify(json));
-                const token = extractToken(json);
-                if (token) localStorage.setItem("token", token);
+    // Basit yönlendirme kuralı
+    function redirectByRole(role) {
+      const r = (role || '').toLowerCase();
+      if (r === 'admin') location.href = '/Admin/Dashboard';
+      else if (r === 'employee') location.href = '/Employee/Dashboard';
+      else location.href = '/';
+    }
 
-                setStatus("Giriş başarılı. Profil doğrulanıyor…", true);
+    // Sekmeler
+    const tabAdmin = document.getElementById('tab-admin');
+    const tabEmp   = document.getElementById('tab-employee');
+    const formAdmin = document.getElementById('form-admin');
+    const formEmp   = document.getElementById('form-employee');
+    const msgAdmin = document.getElementById('msg-admin');
+    const msgEmp   = document.getElementById('msg-emp');
 
-                // Hemen /me ile test et
-                const meRes = await fetch(ENDPOINTS.me, {
-                    headers: token ? { "Authorization": `Bearer ${token}` } : {}
-                });
-
-                if (meRes.ok) {
-                    const me = await meRes.json();
-                    const box = qs("#meBox");
-                    box.textContent = `Hoş geldin ${me?.name ?? ""} (Rol: ${me?.role ?? "?"})`;
-                    hide("#meBox", false);
-                    setStatus("Giriş tamamlandı.", true);
-                    // İstersen burada yönlendirme yap:
-                    // window.location.href = "/";
-                } else {
-                    setStatus("Giriş başarılı ancak profil alınamadı. Yetki başlığı kontrol edin.", false);
-                }
-            } else if (res.status === 401) {
-                setStatus("Yetkisiz: Kimlik bilgileri hatalı.", false);
-            } else if (res.status === 400) {
-                const err = await res.text();
-                setStatus("Geçersiz istek: " + (err || "Doğrulama hatası."), false);
-            } else {
-                const errText = await res.text();
-                setStatus(`Beklenmeyen durum (${res.status}). ${errText}`, false);
-            }
-        } catch (ex) {
-            setStatus("Ağ/istemci hatası: " + (ex?.message || ex), false);
-        } finally {
-            btn.disabled = false;
-        }
+    tabAdmin.addEventListener('click', () => {
+      tabAdmin.classList.add('active');
+      tabEmp.classList.remove('active');
+      formAdmin.classList.remove('hidden');
+      formEmp.classList.add('hidden');
+      msgAdmin.textContent = '';
+      msgEmp.textContent = '';
     });
-</script>
+    tabEmp.addEventListener('click', () => {
+      tabEmp.classList.add('active');
+      tabAdmin.classList.remove('active');
+      formEmp.classList.remove('hidden');
+      formAdmin.classList.add('hidden');
+      msgAdmin.textContent = '';
+      msgEmp.textContent = '';
+    });
+
+    // Admin login
+    formAdmin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msgAdmin.textContent = '';
+      const username = document.getElementById('admin-username').value.trim();
+      const password = document.getElementById('admin-password').value; // trim yok
+
+      try {
+        const res = await fetch('/api/auth/login/admin', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          msgAdmin.textContent = (data?.message || 'Giriş başarısız (401).');
+          return;
+        }
+        const token = readTokenFromResponse(data);
+        if (!token) { msgAdmin.textContent = 'Token alınamadı.'; return; }
+        persistToken(token, data?.expiresAt || data?.exp || data?.expires);
+        // Header test: Hemen korumalı bir endpointe call atalım (cookie -> header fallback test)
+        const me = await authFetch('/api/auth/me');
+        if (me.ok) {
+          const meJson = await me.json().catch(() => ({}));
+          redirectByRole(meJson?.role || data?.role);
+        } else {
+          // Sunucu header bulamazsa cookie'den okuyacak (Program.cs OnMessageReceived), yine de kullanıcıyı yönlendir.
+          redirectByRole(data?.role);
+        }
+      } catch (err) {
+        msgAdmin.textContent = 'Beklenmeyen hata: ' + (err?.message || err);
+      }
+    });
+
+    // Employee login
+    formEmp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msgEmp.textContent = '';
+      const employeeId = document.getElementById('emp-id').value.trim();
+      const password = document.getElementById('emp-pass').value;
+
+      try {
+        const res = await fetch('/api/auth/login/employee', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ employeeId, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          msgEmp.textContent = (data?.message || 'Giriş başarısız (401).');
+          return;
+        }
+        const token = readTokenFromResponse(data);
+        if (!token) { msgEmp.textContent = 'Token alınamadı.'; return; }
+        persistToken(token, data?.expiresAt || data?.exp || data?.expires);
+        const me = await authFetch('/api/auth/me');
+        if (me.ok) {
+          const meJson = await me.json().catch(() => ({}));
+          redirectByRole(meJson?.role || data?.role);
+        } else {
+          redirectByRole(data?.role);
+        }
+      } catch (err) {
+        msgEmp.textContent = 'Beklenmeyen hata: ' + (err?.message || err);
+      }
+    });
+
+    // Logout (cookie temizle)
+    document.getElementById('logout-admin').addEventListener('click', () => {
+      deleteCookie('access_token');
+      window.__jwtCache = null;
+      msgAdmin.className = 'ok';
+      msgAdmin.textContent = 'Çıkış yapıldı (cookie temizlendi).';
+    });
+    document.getElementById('logout-emp').addEventListener('click', () => {
+      deleteCookie('access_token');
+      window.__jwtCache = null;
+      msgEmp.className = 'ok';
+      msgEmp.textContent = 'Çıkış yapıldı (cookie temizlendi).';
+    });
+  </script>
 </body>
 </html>
