@@ -14,31 +14,31 @@ using NLog.Web;
 
 var contentRoot = Directory.GetCurrentDirectory();
 
-// NLog
-var nlogPath1 = Path.Combine(contentRoot, "Configuration", "nlog.config");
-if (File.Exists(nlogPath1))
-    LogManager.Setup().LoadConfigurationFromFile(nlogPath1);
+// -------- NLog --------
+var nlogPath = Path.Combine(contentRoot, "Configuration", "nlog.config");
+if (File.Exists(nlogPath))
+    LogManager.Setup().LoadConfigurationFromFile(nlogPath);
 else
     LogManager.Setup().LoadConfigurationFromAppSettings();
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-// Logging -> NLog
+// NLog'u etkinleştir
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 
-// DbContext
+// -------- DbContext --------
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
     var cs = configuration.GetConnectionString("DefaultConnection");
     opt.UseSqlServer(cs);
 });
 
-// AutoMapper
+// -------- AutoMapper --------
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// ⬇️ Burayı değiştiriyoruz: Views için MVC eklensin
+// -------- MVC + API --------
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o =>
     {
@@ -46,43 +46,46 @@ builder.Services.AddControllersWithViews()
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS
+// -------- CORS --------
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
-// SMTP + Email
+// -------- SMTP / Email --------
 builder.Services.AddOptions<SmtpOptions>()
     .Bind(configuration.GetSection("Smtp"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Domain servisleri
+// -------- Domain Servisleri --------
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<ICableService, CableService>();
 builder.Services.AddScoped<IStockMovementService, StockMovementService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ILogService, LogService>();
 
-// Auth/JWT
+// -------- Auth / JWT --------
 builder.Services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
-builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
         var jwt = configuration.GetSection("Jwt").Get<JwtOptions>()
-                  ?? throw new InvalidOperationException("Jwt ayarları eksik (appsettings).");
-        opt.TokenValidationParameters = new()
+            ?? throw new InvalidOperationException("Jwt ayarları eksik (appsettings).");
+
+        opt.TokenValidationParameters = new TokenValidationParameters
         {
             ValidIssuer = jwt.Issuer,
             ValidAudience = jwt.Audience,
@@ -95,6 +98,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             RoleClaimType = ClaimTypes.Role,
             NameClaimType = ClaimTypes.NameIdentifier
         };
+
+        // 🔑 Header yoksa çereze (cookie) bak — /Admin/Dashboard gibi sayfalar 401 yemesin
+        opt.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (string.IsNullOrEmpty(ctx.Token) &&
+                    ctx.Request.Cookies.TryGetValue("access_token", out var cookieToken))
+                {
+                    ctx.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -102,7 +119,7 @@ builder.Services.AddResponseCompression();
 
 var app = builder.Build();
 
-// Swagger (Development)
+// -------- Pipeline --------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -113,31 +130,34 @@ else
     app.UseHsts();
 }
 
-// Middlewares
-app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseMiddleware<RequestResponseLoggingMiddleware>();
-
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseCors("AllowAll");
+app.UseStaticFiles();
+app.UseRouting();
 
+
+// 1. Exception handling en başta
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// 2. Kimlik doğrulama ve yetkilendirme
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SQL SESSION_CONTEXT (UserID yazımı) — Auth’tan sonra
+// 3. Logging middleware 
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+// 4. Session context (SQL SESSION_CONTEXT) - auth'tan sonra gelmeli
 app.UseMiddleware<SessionContextMiddleware>();
 
-// Statik dosyalar (wwwroot) ve MVC route'ları
-app.UseStaticFiles();
-
-// API controller’lar 
-app.MapControllers();
-
-// Views için default rota: "/" -> Home/Index
+// -------- Rotalar --------
+// MVC (conventional)
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}"
-);
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// API (attribute routing)
+app.MapControllers();
 
 // NLog flush
 app.Lifetime.ApplicationStopped.Register(LogManager.Shutdown);
