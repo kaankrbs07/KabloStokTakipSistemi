@@ -70,31 +70,11 @@ public sealed class AuthService : IAuthService
 
         if (row is null || !row.IsActive) return null;
 
-        // DÜZ METİN KARŞILAŞTIRMA (geçici)
+        // DÜZ METİN KARŞILAŞTIRMA
         if (!string.Equals(req.Password, row.Password, StringComparison.Ordinal))
             return null;
 
         return CreateToken(row.UserID, row.Role, row.FullName);
-    }
-
-    // ---- REGISTER (Employee) ----
-    public async Task<bool> RegisterEmployeeAsync(RegisterEmployeeRequest req, CancellationToken ct = default)
-    {
-        // Şifre policy + hash YOK — düz metin yazılıyor (debug amacıyla)
-        var dto = new CreateUserDto(
-            req.UserID,
-            req.FirstName, req.LastName,
-            req.Email, req.PhoneNumber,
-            req.DepartmentID,
-            Role: "Employee",
-            IsActive: true,
-            Password: req.Password,              // <-- düz metin
-            AdminUsername: null,
-            AdminDepartmentName: null
-        );
-
-        // EF Core UserService çağrısı (SP yok)
-        return await _users.CreateUserAsync(dto);
     }
 
     // ---- JWT ----
