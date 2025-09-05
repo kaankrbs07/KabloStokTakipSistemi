@@ -1,0 +1,26 @@
+﻿# IDE
+.idea/
+.vs/
+*.user
+*.suo
+*.DotSettings.user
+
+# .NET
+bin/
+obj/
+out/
+TestResults/
+
+# Logs
+Logs/
+*.log
+
+# Publish/Artifacts
+publish/
+artifacts/
+
+# Local dev secrets
+appsettings.Development.json
+appsettings.Local.json
+
+appsettings.json
