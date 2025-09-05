@@ -24,7 +24,7 @@ else
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-// NLog'u etkinleÅŸtir
+// NLog'u etkinleştir
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 
@@ -55,9 +55,9 @@ builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("AllowAll", p => p
         .AllowAnyOrigin()
-        .AllowAnyHeader() // TÃ¼m header'lara izin ver
+        .AllowAnyHeader() 
         .AllowAnyMethod()
-        .WithExposedHeaders("Authorization")); // Authorization header'Ä±nÄ± aÃ§Ä±kÃ§a belirt
+        .WithExposedHeaders("Authorization")); 
 });
 
 // -------- SMTP / Email --------
@@ -103,7 +103,7 @@ builder.Services
             NameClaimType = ClaimTypes.NameIdentifier
         };
 
-        // Header yoksa Ã§ereze (cookie) bak â€” sayfalar 401 yemesin
+        // Header yoksa çereze (cookie) bak sayfalar 401 yemesin
         opt.Events = new JwtBearerEvents
         {
             OnMessageReceived = ctx =>
@@ -155,17 +155,17 @@ app.UseStaticFiles();
 app.UseRouting();
 
 
-// 1. Exception handling en baÅŸta
+// 1. Exception handling en başta
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// 2. Kimlik doÄŸrulama ve yetkilendirme
+// 2. Kimlik doğrulama ve yetkilendirme
 app.UseAuthentication();
 app.UseAuthorization();
 
 // 3. Logging middleware 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
-// 4. Session context (SQL SESSION_CONTEXT) - auth'tan sonra gelmeli
+// 4. Session context (SQL SESSION_CONTEXT) 
 app.UseMiddleware<SessionContextMiddleware>();
 
 // -------- Rotalar --------
@@ -176,7 +176,7 @@ app.MapControllers();
 app.MapControllers();
 
 // NLog flush
-// Buffer'daki loglar kaybolmasÄ±n
+// Buffer'daki loglar kaybolmasın
 app.Lifetime.ApplicationStopped.Register(LogManager.Shutdown);
 
 app.Run();
